@@ -1,6 +1,6 @@
-
-CONFIG := clang
+# CONFIG := clang
 # CONFIG := gcc
+CONFIG := cross-compile
 # CONFIG := gcc-4.6
 # CONFIG := emcc
 # CONFIG := mxe
@@ -18,7 +18,7 @@ ENABLE_LIBYOSYS := 0
 ENABLE_GPROF := 0
 ENABLE_NDEBUG := 0
 
-PREFIX ?= /usr/local
+PREFIX ?= build
 INSTALL_SUDO :=
 
 TARGET_BINDIR := $(DESTDIR)$(PREFIX)/bin
@@ -31,13 +31,30 @@ EXTRA_OBJS =
 EXTRA_TARGETS =
 TARGETS = yosys$(EXE) yosys-config
 
-PRETTY = 1
+PRETTY = 0
 SMALL = 0
 
 all: top-all
 
 YOSYS_SRC := $(dir $(firstword $(MAKEFILE_LIST)))
 VPATH := $(YOSYS_SRC)
+
+
+# my libs and includes paths ########################
+
+# LIBS
+NCURSES_LIB_PATH=$(LIBNCURSES_INSTALL_PATH)/lib
+READLINE_LIB_PATH=$(LIBREADLINE_INSTALL_PATH)/lib
+FFI_LIB_PATH=$(LIBFFI_INSTALL_PATH)/lib
+TCL_LIB_PATH=$(LIBTCL_INSTALL_PATH)/lib
+
+# INCLUDES
+NCURSES_INC_PATH=$(LIBNCURSES_INSTALL_PATH)/include
+READLINE_INC_PATH=$(LIBREADLINE_INSTALL_PATH)/include
+FFI_INC_PATH=$(LIBFFI_INSTALL_PATH)/lib/libffi-3.2.1/include
+TCL_INC_PATH=$(LIBTCL_INSTALL_PATH)/include
+
+####################################################
 
 CXXFLAGS += -Wall -Wextra -ggdb -I. -I"$(YOSYS_SRC)" -MD -D_YOSYS_ -fPIC -I$(DESTDIR)$(PREFIX)/include
 LDFLAGS += -L$(DESTDIR)$(PREFIX)/lib
@@ -70,8 +87,8 @@ OBJS = kernel/version_$(GIT_REV).o
 # is just a symlink to your actual ABC working directory, as 'make mrproper'
 # will remove the 'abc' directory and you do not want to accidentally
 # delete your work on ABC..
-ABCREV = c3698e053a7a
-ABCPULL = 1
+ABCREV = default
+ABCPULL = 0
 ABCMKARGS = CC="$(CXX)" CXX="$(CXX)"
 
 define newline
@@ -91,6 +108,12 @@ CXXFLAGS += -std=c++11 -Os
 else ifeq ($(CONFIG),gcc)
 CXX = gcc
 CXXFLAGS += -std=gnu++0x -Os
+
+else ifeq ($(CONFIG),cross-compile)
+CXX = $(CC_PREFIX)g++
+CC = $(CC_PREFIX)gcc
+CXXFLAGS += -std=gnu++0x -Os -I$(READLINE_INC_PATH) -I$(NCURSES_INC_PATH) -I$(FFI_INC_PATH) -I$(TCL_INC_PATH)  -L$(NCURSES_LIB_PATH) -L$(READLINE_LIB_PATH) -L$(FFI_LIB_PATH)
+LDFLAGS += -L$(NCURSES_LIB_PATH) -L$(READLINE_LIB_PATH) -L$(FFI_LIB_PATH) -L$(TCL_LIB_PATH) -Wl,-rpath=$(NCURSES_LIB_PATH):$(READLINE_LIB_PATH):$(FFI_LIB_PATH):$(TCL_LIB_PATH)
 
 else ifeq ($(CONFIG),gcc-4.6)
 CXX = gcc-4.6
@@ -303,6 +326,9 @@ yosys$(EXE): $(OBJS)
 	$(P) $(CXX) -o yosys$(EXE) $(LDFLAGS) $(OBJS) $(LDLIBS)
 
 libyosys.so: $(filter-out kernel/driver.o,$(OBJS))
+	echo $(LDFLAGS)
+	echo $(LDLIBS)
+	echo "TEEEEST"
 	$(P) $(CXX) -o libyosys.so -shared -Wl,-soname,libyosys.so $(LDFLAGS) $^ $(LDLIBS)
 
 %.o: %.cc
@@ -324,28 +350,11 @@ yosys-config: misc/yosys-config.in
 			-e 's#@BINDIR@#$(TARGET_BINDIR)#;' -e 's#@DATDIR@#$(TARGET_DATDIR)#;' < $< > yosys-config
 	$(Q) chmod +x yosys-config
 
-abc/abc-$(ABCREV)$(EXE):
-	$(P)
-ifneq ($(ABCREV),default)
-	$(Q) if ( cd abc 2> /dev/null && hg identify; ) | grep -q +; then \
-		echo 'REEBE: NOP pbagnvaf ybpny zbqvsvpngvbaf! Frg NOPERI=qrsnhyg va Lbflf Znxrsvyr!' | tr 'A-Za-z' 'N-ZA-Mn-za-m'; false; \
-	fi
-	$(Q) if test "`cd abc 2> /dev/null && hg identify | cut -f1 -d' '`" != "$(ABCREV)"; then \
-		test $(ABCPULL) -ne 0 || { echo 'REEBE: NOP abg hc gb qngr naq NOPCHYY frg gb 0 va Znxrsvyr!' | tr 'A-Za-z' 'N-ZA-Mn-za-m'; exit 1; }; \
-		echo "Pulling ABC from bitbucket.org:"; set -x; \
-		test -d abc || hg clone https://bitbucket.org/alanmi/abc abc; \
-		cd abc && $(MAKE) DEP= clean && hg pull && hg update -r $(ABCREV); \
-	fi
-endif
-	$(Q) rm -f abc/abc-[0-9a-f]*
-	$(Q) cd abc && $(MAKE) $(S) $(ABCMKARGS) PROG="abc-$(ABCREV)$(EXE)" MSG_PREFIX="$(eval P_OFFSET = 5)$(call P_SHOW)$(eval P_OFFSET = 10) ABC: "
 
-ifeq ($(ABCREV),default)
-.PHONY: abc/abc-$(ABCREV)$(EXE)
-endif
+.PHONY: abc/abc
 
-yosys-abc$(EXE): abc/abc-$(ABCREV)$(EXE)
-	$(P) cp abc/abc-$(ABCREV)$(EXE) yosys-abc$(EXE)
+yosys-abc$(EXE): abc/abc
+	$(P) cp $(ROOT_DIR)/abc-lib/abc yosys-abc$(EXE)
 
 test: $(TARGETS) $(EXTRA_TARGETS)
 	+cd tests/simple && bash run-test.sh
