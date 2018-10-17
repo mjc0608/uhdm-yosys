@@ -105,10 +105,17 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 	end endgenerate
 `else
 	wire CINIT;
-	// Carry outputs for carry chain.
-	wire [Y_WIDTH-1:0] C = {CO, CINIT};
-	// Carry outputs for fabric.
-	wire [Y_WIDTH-1:0] LO;
+	// Carry chain.
+	//
+	// VPR requires that the carry chain never hit the fabric.  The CO input
+	// to this techmap is the carry outputs for synthesis, e.g. might hit the
+	// fabric.
+	//
+	// So we maintain two wire sets, CO_CHAIN is the carry that is for VPR,
+	// e.g. off fabric dedicated chain.  CO is the carry outputs that are
+	// available to the fabric.
+	wire [Y_WIDTH-1:0] CO_CHAIN;
+	wire [Y_WIDTH-1:0] C = {CO_CHAIN, CINIT};
 
 	// If carry chain is being initialized to a constant, techmap the constant
 	// source.  Otherwise techmap the fabric source.
@@ -128,16 +135,12 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 
 	genvar i;
 	generate for (i = 0; i < Y_WIDTH; i = i + 1) begin:slice
-		MUXCY muxcy (
+		CARRY carry (
 			.CI(C[i]),
 			.DI(DI[i]),
 			.S(S[i]),
-			.CO(CO[i]),
-			.CO2(LO[i])
-		);
-		XORCY xorcy (
-			.CI(C[i]),
-			.LI(S[i]),
+			.CO_CHAIN(CO_CHAIN[i]),
+			.CO_FABRIC(CO[i]),
 			.O(Y[i])
 		);
 	end endgenerate
