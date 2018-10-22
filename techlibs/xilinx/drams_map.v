@@ -11,6 +11,7 @@ module \$__XILINX_RAM64X1D (CLK1, A1ADDR, A1DATA, B1ADDR, B1DATA, B1EN);
 	input B1DATA;
 	input B1EN;
 
+`ifndef _EXPLICIT_DRAM
 	RAM64X1D #(
 		.INIT(INIT),
 		.IS_WCLK_INVERTED(!CLKPOL2)
@@ -33,6 +34,29 @@ module \$__XILINX_RAM64X1D (CLK1, A1ADDR, A1DATA, B1ADDR, B1DATA, B1EN);
 		.WCLK(CLK1),
 		.WE(B1EN)
 	);
+`else
+	DPRAM64 #(
+		.INIT(INIT),
+		.IS_WCLK_INVERTED(!CLKPOL2)
+	) dram_S (
+		.DI1(B1DATA),
+		.A(B1ADDR),
+		.WA(B1ADDR),
+		.CLK(CLK1),
+		.WE(B1EN),
+	);
+	DPRAM64 #(
+		.INIT(INIT),
+		.IS_WCLK_INVERTED(!CLKPOL2)
+	) dram_D (
+		.DI1(B1DATA),
+		.A(A1ADDR),
+		.WA(B1ADDR),
+		.CLK(CLK1),
+		.WE(B1EN),
+		.O6(A1DATA),
+	);
+`endif
 endmodule
 
 module \$__XILINX_RAM128X1D (CLK1, A1ADDR, A1DATA, B1ADDR, B1DATA, B1EN);

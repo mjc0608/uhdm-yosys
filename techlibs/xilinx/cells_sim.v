@@ -207,3 +207,18 @@ module RAM128X1D (
   wire clk = WCLK ^ IS_WCLK_INVERTED;
   always @(posedge clk) if (WE) mem[A] <= D;
 endmodule
+
+module DPRAM64 (
+  output O6,
+  input  DI1, CLK, WE,
+  input [5:0] A, WA
+);
+  parameter INIT = 64'h0;
+  parameter IS_WCLK_INVERTED = 1'b0;
+  wire [5:0] A;
+  wire [5:0] WA;
+  reg [63:0] mem = INIT;
+  assign O6 = mem[A];
+  wire clk = CLK ^ IS_WCLK_INVERTED;
+  always @(posedge clk) if (WE) mem[WA] <= DI1;
+endmodule

@@ -218,7 +218,14 @@ struct SynthXilinxPass : public Pass
 		if (check_label(active, run_from, run_to, "dram"))
 		{
 			Pass::call(design, "memory_bram -rules +/xilinx/drams.txt");
-			Pass::call(design, "techmap -map +/xilinx/drams_map.v");
+			if (vpr)
+			{
+				Pass::call(design, "techmap -map +/xilinx/drams_map.v -D _EXPLICIT_DRAM");
+			}
+			else
+			{
+				Pass::call(design, "techmap -map +/xilinx/drams_map.v");
+			}
 		}
 
 		if (check_label(active, run_from, run_to, "fine"))
