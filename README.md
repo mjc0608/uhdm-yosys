@@ -1,3 +1,13 @@
+
+SymbiFlow WIP changes for Yosys
+===============================
+
+This branch contains work in progress changes for using Yosys as part of
+SymbiFlow.
+
+---
+
+
 ```
 yosys -- Yosys Open SYnthesis Suite
 
