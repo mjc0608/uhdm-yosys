@@ -125,7 +125,7 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 			end
 		else
 			begin
-					CYINIT_CONSTANTS cyinit_const(.C0(CINIT));
+				CYINIT_CONSTANTS cyinit_const(.C0(CINIT));
 			end
 		end
 	else
