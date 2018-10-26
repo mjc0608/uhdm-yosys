@@ -119,30 +119,82 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 
 	// If carry chain is being initialized to a constant, techmap the constant
 	// source.  Otherwise techmap the fabric source.
-	if(_TECHMAP_CONSTMSK_CI_ === 1) begin
-		if(_TECHMAP_CONSTVAL_CI_ === 1) begin
-				CYINIT_CONSTANTS cyinit_const(.C1(CINIT));
-			end
-		else
-			begin
-				CYINIT_CONSTANTS cyinit_const(.C0(CINIT));
-			end
-		end
-	else
-		begin
-			CYINIT_FABRIC cyinit_const(.CI_FABRIC(CI), .CI_CHAIN(CINIT));
-		end
+	generate for (i = 0; i < 1; i = i + 1) begin:slice
+		CARRY0 carry(
+			.CI_INIT(CI),
+			.DI(DI[0]),
+			.S(S[0]),
+			.CO_CHAIN(CO_CHAIN[0]),
+			.CO_FABRIC(CO[0]),
+			.O(Y[0])
+		);
+	end endgenerate
 
 	genvar i;
-	generate for (i = 0; i < Y_WIDTH; i = i + 1) begin:slice
-		CARRY carry (
-			.CI(C[i]),
-			.DI(DI[i]),
-			.S(S[i]),
-			.CO_CHAIN(CO_CHAIN[i]),
-			.CO_FABRIC(CO[i]),
-			.O(Y[i])
-		);
+	generate for (i = 1; i < Y_WIDTH-1; i = i + 1) begin:slice
+        if(i % 4 == 0) begin
+			CARRY0 carry (
+				.CI(C[i]),
+				.DI(DI[i]),
+				.S(S[i]),
+				.CO_CHAIN(CO_CHAIN[i]),
+				.CO_FABRIC(CO[i]),
+				.O(Y[i])
+			);
+		end
+		else
+		begin
+			CARRY carry (
+				.CI(C[i]),
+				.DI(DI[i]),
+				.S(S[i]),
+				.CO_CHAIN(CO_CHAIN[i]),
+				.CO_FABRIC(CO[i]),
+				.O(Y[i])
+			);
+		end
+	end endgenerate
+	generate for (i = Y_WIDTH-1; i < Y_WIDTH; i = i + 1) begin:slice
+        if(i % 4 == 0) begin
+			CARRY0 top_of_carry (
+				.CI(C[i]),
+				.DI(DI[i]),
+				.S(S[i]),
+				.CO_CHAIN(CO_CHAIN[i]),
+				.O(Y[i])
+			);
+		end
+		else
+		begin
+			CARRY top_of_carry (
+				.CI(C[i]),
+				.DI(DI[i]),
+				.S(S[i]),
+				.CO_CHAIN(CO_CHAIN[i]),
+				.O(Y[i])
+			);
+		end
+        // Turns out CO_FABRIC and O both use [ABCD]MUX, so provide
+        // a non-congested path to output the top of the carry chain.
+        // Registering the output of the CARRY block would solve this, but not
+        // all designs do that.
+        if((i+1) % 4 == 0) begin
+			CARRY0 carry_output (
+				.CI(CO_CHAIN[i]),
+				.DI(0),
+				.S(0),
+				.O(CO[i])
+			);
+		end
+		else
+		begin
+			CARRY carry_output (
+				.CI(CO_CHAIN[i]),
+				.DI(0),
+				.S(0),
+				.O(CO[i])
+			);
+		end
 	end endgenerate
 `endif
 

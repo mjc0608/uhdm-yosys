@@ -89,7 +89,38 @@ module XORCY(output O, input CI, LI);
   assign O = CI ^ LI;
 endmodule
 `else
+module CARRY0(output CO_CHAIN, CO_FABRIC, O, input CI, CI_INIT, DI, S);
+  assign CI_COMBINE = CI | CI_INIT;
+  assign CO_CHAIN = S ? CI_COMBINE : DI;
+  assign CO_FABRIC = S ? CI_COMBINE : DI;
+  assign O = S ^ CI_COMBINE;
+endmodule
+
 module CARRY(output CO_CHAIN, CO_FABRIC, O, input CI, DI, S);
+  assign CO_CHAIN = S ? CI : DI;
+  assign CO_FABRIC = S ? CI : DI;
+  assign O = S ^ CI;
+endmodule
+
+module CARRY_INIT0(output CO_CHAIN, CO_FABRIC, O, input DI, S);
+  wire CI;
+  assign CI = 0;
+  assign CO_CHAIN = S ? CI : DI;
+  assign CO_FABRIC = S ? CI : DI;
+  assign O = S ^ CI;
+endmodule
+
+module CARRY_INIT1(output CO_CHAIN, CO_FABRIC, O, input DI, S);
+  wire CI;
+  assign CI = 1;
+  assign CO_CHAIN = S ? CI : DI;
+  assign CO_FABRIC = S ? CI : DI;
+  assign O = S ^ CI;
+endmodule
+
+module CARRY_INIT_FABRIC(output CO_CHAIN, CO_FABRIC, O, input CI_FABRIC, DI, S);
+  wire CI;
+  assign CI = CI_FABRIC;
   assign CO_CHAIN = S ? CI : DI;
   assign CO_FABRIC = S ? CI : DI;
   assign O = S ^ CI;
@@ -103,6 +134,7 @@ endmodule
 module CYINIT_FABRIC(output CI_CHAIN, input CI_FABRIC);
   assign CI_CHAIN = CI_FABRIC;
 endmodule
+
 `endif
 
 module MUXF6(output O, input I0, I1, S);
