@@ -21,10 +21,13 @@ module RAM128X1S (
     //
     // Note that a RAM128X1D does not require [SD]PRAM128 because it consumes
     // the entire slice.
+	//
+	// It is important that the SPRAM128 block name be sorted less than the
+	// DPRAM128 block.  This is because VPR packs in order of apperance.
 	SPRAM128 #(
 		.INIT(INIT[63:0]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) low_ram (
+	) ram0 (
 		.DI1(D),
 		.A(A),
 		.WA7(A6),
@@ -36,7 +39,7 @@ module RAM128X1S (
 	DPRAM128 #(
 		.INIT(INIT[127:64]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) high_ram (
+	) ram1 (
 		.DI1(D),
 		.A(A),
 		.WA(A),
@@ -61,10 +64,12 @@ module RAM128X1D (
 	wire blut_o6;
 	wire alut_o6;
 
+	// It is important that the SPRAM64 block name be sorted less than the
+	// DPRAM64 block.  This is because VPR packs in order of apperance.
 	SPRAM64 #(
 		.INIT(INIT[63:0]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) dlut_ram (
+	) ram0 (
 		.DI1(D),
 		.A(A[5:0]),
 		.WA7(A[6]),
@@ -76,7 +81,7 @@ module RAM128X1D (
 	DPRAM64 #(
 		.INIT(INIT[127:64]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) clut_ram (
+	) ram1 (
 		.DI1(D),
 		.A(A[5:0]),
 		.WA(A[5:0]),
@@ -89,7 +94,7 @@ module RAM128X1D (
 	DPRAM64 #(
 		.INIT(INIT[63:0]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) blut_ram (
+	) ram2 (
 		.DI1(D),
 		.A(DPRA[5:0]),
 		.WA(A[5:0]),
@@ -102,7 +107,7 @@ module RAM128X1D (
 	DPRAM64 #(
 		.INIT(INIT[127:64]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) alut_ram (
+	) ram3 (
 		.DI1(D),
 		.A(DPRA[5:0]),
 		.WA(A[5:0]),
@@ -131,10 +136,12 @@ module RAM256X1S (
 	wire f7b_o;
 	wire f7a_o;
 
+	// It is important that the SPRAM64 block name be sorted less than the
+	// DPRAM64 block.  This is because VPR packs in order of apperance.
 	SPRAM64 #(
 		.INIT(INIT[63:0]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) dlut_ram (
+	) ram0 (
 		.DI1(D),
 		.A(A[5:0]),
 		.WA7(A[6]),
@@ -147,7 +154,7 @@ module RAM256X1S (
 	DPRAM64 #(
 		.INIT(INIT[127:64]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) clut_ram (
+	) ram1 (
 		.DI1(D),
 		.A(A[5:0]),
 		.WA(A[5:0]),
@@ -161,7 +168,7 @@ module RAM256X1S (
 	DPRAM64 #(
 		.INIT(INIT[191:128]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) blut_ram (
+	) ram2 (
 		.DI1(D),
 		.A(A[5:0]),
 		.WA(A[5:0]),
@@ -175,7 +182,7 @@ module RAM256X1S (
 	DPRAM64 #(
 		.INIT(INIT[255:192]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) alut_ram (
+	) ram3 (
 		.DI1(D),
 		.A(A[5:0]),
 		.WA(A[5:0]),
@@ -203,10 +210,12 @@ module RAM32X1D (
 	wire [4:0] WA = {A5, A4, A3, A2, A1, A0};
 	wire [4:0] DPRA = {DPRA5, DPRA4, DPRA3, DPRA2, DPRA1, DPRA0};
 
+	// It is important that the SPRAM32 block name be sorted less than the
+	// DPRAM32 block.  This is because VPR packs in order of apperance.
 	SPRAM32 #(
 		.INIT_00(INIT),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) dram_S (
+	) ram0 (
 		.DI1(D),
 		.A(WA),
 		.CLK(WCLK),
@@ -216,7 +225,7 @@ module RAM32X1D (
 	DPRAM32 #(
 		.INIT_00(INIT),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) dram_D (
+	) ram1 (
 		.DI1(D),
 		.A(DPRA),
 		.WA(WA),
@@ -282,10 +291,12 @@ module RAM64X1D (
 	wire [5:0] WA = {A5, A4, A3, A2, A1, A0};
 	wire [5:0] DPRA = {DPRA5, DPRA4, DPRA3, DPRA2, DPRA1, DPRA0};
 
+	// It is important that the SPRAM64 block name be sorted less than the
+	// DPRAM64 block.  This is because VPR packs in order of apperance.
 	SPRAM64 #(
 		.INIT(INIT),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) dram_S (
+	) dram0 (
 		.DI1(D),
 		.A(WA),
 		.CLK(WCLK),
@@ -295,7 +306,7 @@ module RAM64X1D (
 	DPRAM64 #(
 		.INIT(INIT),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) dram_D (
+	) dram1 (
 		.DI1(D),
 		.A(DPRA),
 		.WA(WA),
