@@ -189,7 +189,7 @@ struct SynthXilinxPass : public Pass
 		{
 			if (vpr)
 			{
-				Pass::call(design, "read_verilog -lib -D_EXPLICIT_CARRY +/xilinx/cells_sim.v");
+				Pass::call(design, "read_verilog -lib -D_EXPLICIT_CARRY -D_EXPLICIT_DRAM +/xilinx/cells_sim.v");
 			} else {
 				Pass::call(design, "read_verilog -lib +/xilinx/cells_sim.v");
 			}
