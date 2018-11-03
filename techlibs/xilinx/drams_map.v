@@ -98,7 +98,6 @@ module RAM128X1D (
 	DPRAM128 #(
 		.INIT(INIT[63:0]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
-		.WA7USED(1),
 		.HIGH_WA7_SELECT(0)
 	) ram2 (
 		.DI1(D),
@@ -113,7 +112,6 @@ module RAM128X1D (
 	DPRAM128 #(
 		.INIT(INIT[127:64]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
-		.WA7USED(1),
 		.HIGH_WA7_SELECT(0)
 	) ram3 (
 		.DI1(D),
@@ -231,8 +229,8 @@ module RAM32X1D (
 	parameter [31:0] INIT = 32'bx;
 	parameter IS_WCLK_INVERTED = 0;
 
-	wire [4:0] WA = {A5, A4, A3, A2, A1, A0};
-	wire [4:0] DPRA = {DPRA5, DPRA4, DPRA3, DPRA2, DPRA1, DPRA0};
+	wire [4:0] WA = {A4, A3, A2, A1, A0};
+	wire [4:0] DPRA = {DPRA4, DPRA3, DPRA2, DPRA1, DPRA0};
 
 	// It is important that the SPRAM32 block name be sorted less than the
 	// DPRAM32 block.  This is because VPR packs in order of apperance.
