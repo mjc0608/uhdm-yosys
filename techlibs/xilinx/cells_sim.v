@@ -244,60 +244,78 @@ endmodule
 
 module DPRAM128 (
   output O6,
-  input  DI1, CLK, WE,
-  input [5:0] A, WA
+  input  DI1, CLK, WE, WA7,
+  input [5:0] A, WA,
 );
   parameter [63:0] INIT = 64'h0;
   parameter IS_WCLK_INVERTED = 1'b0;
+  parameter HIGH_WA7_SELECT = 1'b0;
   wire [5:0] A;
   wire [5:0] WA;
   reg [63:0] mem = INIT;
   assign O6 = mem[A];
   wire clk = CLK ^ IS_WCLK_INVERTED;
-  always @(posedge clk) if (WE) mem[WA] <= DI1;
+  always @(posedge clk) if (WE & (WA7 == HIGH_WA7_SELECT)) mem[WA] <= DI1;
 endmodule
 
 module SPRAM128 (
   output O6,
-  input  DI1, CLK, WE,
+  input  DI1, CLK, WE, WA7,
   input [5:0] A
 );
   parameter [63:0] INIT = 64'h0;
   parameter IS_WCLK_INVERTED = 1'b0;
+  parameter HIGH_WA7_SELECT = 1'b0;
   wire [5:0] A;
   reg [63:0] mem = INIT;
   assign O6 = mem[A];
   wire clk = CLK ^ IS_WCLK_INVERTED;
-  always @(posedge clk) if (WE) mem[A] <= DI1;
+  always @(posedge clk) if (WE & (WA7 == HIGH_WA7_SELECT)) mem[A] <= DI1;
 endmodule
 
 module DPRAM64 (
   output O6,
-  input  DI1, CLK, WE,
+  input  DI1, CLK, WE, WA7, WA8,
   input [5:0] A, WA
 );
   parameter [63:0] INIT = 64'h0;
   parameter IS_WCLK_INVERTED = 1'b0;
+  parameter WA7USED = 1'b0;
+  parameter WA8USED = 1'b0;
+  parameter HIGH_WA7_SELECT = 1'b0;
+  parameter HIGH_WA8_SELECT = 1'b0;
   wire [5:0] A;
   wire [5:0] WA;
   reg [63:0] mem = INIT;
   assign O6 = mem[A];
   wire clk = CLK ^ IS_WCLK_INVERTED;
-  always @(posedge clk) if (WE) mem[WA] <= DI1;
+
+  wire WA7SELECT = !WA7USED | (WA7 == HIGH_WA7_SELECT);
+  wire WA8SELECT = !WA8USED | (WA8 == HIGH_WA8_SELECT);
+  wire address_selected = WA7SELECT & WA8SELECT;
+  always @(posedge clk) if (WE & address_selected) mem[WA] <= DI1;
 endmodule
 
 module SPRAM64 (
   output O6,
-  input  DI1, CLK, WE,
+  input  DI1, CLK, WE, WA7, WA8,
   input [5:0] A
 );
   parameter [63:0] INIT = 64'h0;
   parameter IS_WCLK_INVERTED = 1'b0;
+  parameter WA7USED = 1'b0;
+  parameter WA8USED = 1'b0;
+  parameter HIGH_WA7_SELECT = 1'b0;
+  parameter HIGH_WA8_SELECT = 1'b0;
   wire [5:0] A;
   reg [63:0] mem = INIT;
   assign O6 = mem[A];
   wire clk = CLK ^ IS_WCLK_INVERTED;
-  always @(posedge clk) if (WE) mem[A] <= DI1;
+
+  wire WA7SELECT = !WA7USED | (WA7 == HIGH_WA7_SELECT);
+  wire WA8SELECT = !WA8USED | (WA8 == HIGH_WA8_SELECT);
+  wire address_selected = WA7SELECT & WA8SELECT;
+  always @(posedge clk) if (WE & address_selected) mem[A] <= DI1;
 endmodule
 
 module DPRAM32 (

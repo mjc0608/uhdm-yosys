@@ -26,7 +26,8 @@ module RAM128X1S (
 	// DPRAM128 block.  This is because VPR packs in order of apperance.
 	SPRAM128 #(
 		.INIT(INIT[63:0]),
-		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
+		.HIGH_WA7_SELECT(0)
 	) ram0 (
 		.DI1(D),
 		.A(A),
@@ -38,7 +39,8 @@ module RAM128X1S (
 
 	DPRAM128 #(
 		.INIT(INIT[127:64]),
-		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
+		.HIGH_WA7_SELECT(1)
 	) ram1 (
 		.DI1(D),
 		.A(A),
@@ -49,7 +51,7 @@ module RAM128X1S (
 		.O6(high_lut_o6)
 	);
 
-	MUXF7 f7_mux (.O(O), .I0(low_lut_o6), .I1(high_lut_o6), .S(A6));
+	MUXF7 ram_f7_mux (.O(O), .I0(low_lut_o6), .I1(high_lut_o6), .S(A6));
 endmodule
 
 module RAM128X1D (
@@ -66,9 +68,10 @@ module RAM128X1D (
 
 	// It is important that the SPRAM64 block name be sorted less than the
 	// DPRAM64 block.  This is because VPR packs in order of apperance.
-	SPRAM64 #(
+	SPRAM128 #(
 		.INIT(INIT[63:0]),
-		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
+		.HIGH_WA7_SELECT(0)
 	) ram0 (
 		.DI1(D),
 		.A(A[5:0]),
@@ -78,9 +81,10 @@ module RAM128X1D (
 		.O6(dlut_o6)
 	);
 
-	DPRAM64 #(
+	DPRAM128 #(
 		.INIT(INIT[127:64]),
-		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
+		.HIGH_WA7_SELECT(1)
 	) ram1 (
 		.DI1(D),
 		.A(A[5:0]),
@@ -91,9 +95,11 @@ module RAM128X1D (
 		.O6(clut_o6)
 	);
 
-	DPRAM64 #(
+	DPRAM128 #(
 		.INIT(INIT[63:0]),
-		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
+		.WA7USED(1),
+		.HIGH_WA7_SELECT(0)
 	) ram2 (
 		.DI1(D),
 		.A(DPRA[5:0]),
@@ -104,9 +110,11 @@ module RAM128X1D (
 		.O6(blut_o6)
 	);
 
-	DPRAM64 #(
+	DPRAM128 #(
 		.INIT(INIT[127:64]),
-		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
+		.WA7USED(1),
+		.HIGH_WA7_SELECT(0)
 	) ram3 (
 		.DI1(D),
 		.A(DPRA[5:0]),
@@ -140,7 +148,11 @@ module RAM256X1S (
 	// DPRAM64 block.  This is because VPR packs in order of apperance.
 	SPRAM64 #(
 		.INIT(INIT[63:0]),
-		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
+		.WA7USED(1),
+		.WA8USED(1),
+		.HIGH_WA7_SELECT(0),
+		.HIGH_WA8_SELECT(0)
 	) ram0 (
 		.DI1(D),
 		.A(A[5:0]),
@@ -153,7 +165,11 @@ module RAM256X1S (
 
 	DPRAM64 #(
 		.INIT(INIT[127:64]),
-		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
+		.WA7USED(1),
+		.WA8USED(1),
+		.HIGH_WA7_SELECT(1),
+		.HIGH_WA8_SELECT(0)
 	) ram1 (
 		.DI1(D),
 		.A(A[5:0]),
@@ -167,7 +183,11 @@ module RAM256X1S (
 
 	DPRAM64 #(
 		.INIT(INIT[191:128]),
-		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
+		.WA7USED(1),
+		.WA8USED(1),
+		.HIGH_WA7_SELECT(0),
+		.HIGH_WA8_SELECT(1)
 	) ram2 (
 		.DI1(D),
 		.A(A[5:0]),
@@ -181,7 +201,11 @@ module RAM256X1S (
 
 	DPRAM64 #(
 		.INIT(INIT[255:192]),
-		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
+		.WA7USED(1),
+		.WA8USED(1),
+		.HIGH_WA7_SELECT(1),
+		.HIGH_WA8_SELECT(1)
 	) ram3 (
 		.DI1(D),
 		.A(A[5:0]),
