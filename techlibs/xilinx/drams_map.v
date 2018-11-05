@@ -1,4 +1,3 @@
-
 `ifdef _EXPLICIT_DRAM
 
 module RAM128X1S (
@@ -21,9 +20,6 @@ module RAM128X1S (
     //
     // Note that a RAM128X1D does not require [SD]PRAM128 because it consumes
     // the entire slice.
-	//
-	// It is important that the SPRAM128 block name be sorted less than the
-	// DPRAM128 block.  This is because VPR packs in order of apperance.
 	SPRAM128 #(
 		.INIT(INIT[63:0]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
@@ -66,8 +62,6 @@ module RAM128X1D (
 	wire blut_o6;
 	wire alut_o6;
 
-	// It is important that the SPRAM64 block name be sorted less than the
-	// DPRAM64 block.  This is because VPR packs in order of apperance.
 	SPRAM128 #(
 		.INIT(INIT[63:0]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
@@ -123,9 +117,15 @@ module RAM128X1D (
 		.O6(alut_o6)
 	);
 
+    wire SPO_FORCE;
+    wire DPO_FORCE;
 
-	MUXF7 f7b_mux (.O(SPO), .I0(dlut_o6), .I1(clut_o6), .S(A[6]));
-	MUXF7 f7a_mux (.O(DPO), .I0(blut_o6), .I1(alut_o6), .S(DPRA[6]));
+	MUXF7 f7b_mux (.O(SPO_FORCE), .I0(dlut_o6), .I1(clut_o6), .S(A[6]));
+	MUXF7 f7a_mux (.O(DPO_FORCE), .I0(blut_o6), .I1(alut_o6), .S(DPRA[6]));
+
+	DRAM_2_OUTPUT_STUB stub (
+		.SPO(SPO_FORCE), .DPO(DPO_FORCE),
+		.SPO_OUT(SPO), .DPO_OUT(DPO));
 endmodule
 
 module RAM256X1S (
@@ -142,8 +142,6 @@ module RAM256X1S (
 	wire f7b_o;
 	wire f7a_o;
 
-	// It is important that the SPRAM64 block name be sorted less than the
-	// DPRAM64 block.  This is because VPR packs in order of apperance.
 	SPRAM64 #(
 		.INIT(INIT[63:0]),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED),
@@ -232,8 +230,8 @@ module RAM32X1D (
 	wire [4:0] WA = {A4, A3, A2, A1, A0};
 	wire [4:0] DPRA = {DPRA4, DPRA3, DPRA2, DPRA1, DPRA0};
 
-	// It is important that the SPRAM32 block name be sorted less than the
-	// DPRAM32 block.  This is because VPR packs in order of apperance.
+	wire SPO_FORCE, DPO_FORCE;
+
 	SPRAM32 #(
 		.INIT_00(INIT),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
@@ -242,7 +240,7 @@ module RAM32X1D (
 		.A(WA),
 		.CLK(WCLK),
 		.WE(WE),
-		.O6(SPO)
+		.O6(SPO_FORCE)
 	);
 	DPRAM32 #(
 		.INIT_00(INIT),
@@ -253,8 +251,12 @@ module RAM32X1D (
 		.WA(WA),
 		.CLK(WCLK),
 		.WE(WE),
-		.O6(DPO)
+		.O6(DPO_FORCE)
 	);
+
+	DRAM_2_OUTPUT_STUB stub (
+		.SPO(SPO_FORCE), .DPO(DPO_FORCE),
+		.SPO_OUT(SPO), .DPO_OUT(DPO));
 endmodule
 
 module RAM32X1S (
@@ -301,6 +303,86 @@ module RAM32X2S (
 	);
 endmodule
 
+module RAM32M (
+  output [1:0] DOA, DOB, DOC, DOD,
+  input [1:0] DIA, DIB, DIC, DID,
+  input [4:0] ADDRA, ADDRB, ADDRC, ADDRD,
+  input WE, WCLK
+);
+	parameter [63:0] INIT_A = 64'bx;
+	parameter [63:0] INIT_B = 64'bx;
+	parameter [63:0] INIT_C = 64'bx;
+	parameter [63:0] INIT_D = 64'bx;
+
+
+endmodule
+
+//module RAM64M (
+//  output DOA, DOB, DOC, DOD,
+//  input DIA, DIB, DIC, DID,
+//  input [5:0] ADDRA, ADDRB, ADDRC, ADDRD,
+//  input WE, WCLK
+//);
+//	parameter [63:0] INIT_A = 64'bx;
+//	parameter [63:0] INIT_B = 64'bx;
+//	parameter [63:0] INIT_C = 64'bx;
+//	parameter [63:0] INIT_D = 64'bx;
+//	parameter IS_WCLK_INVERTED = 0;
+//
+//	parameter _TECHMAP_BITS_CONNMAP_ = 0;
+//	parameter _TECHMAP_CONNMAP_DIA_ = 0;
+//	parameter _TECHMAP_CONNMAP_DIB_ = 0;
+//	parameter _TECHMAP_CONNMAP_DIC_ = 0;
+//	parameter _TECHMAP_CONNMAP_DID_ = 0;
+//	parameter _TECHMAP_CONNMAP_ADDRA_ = 0;
+//	parameter _TECHMAP_CONNMAP_ADDRB_ = 0;
+//	parameter _TECHMAP_CONNMAP_ADDRC_ = 0;
+//	parameter _TECHMAP_CONNMAP_ADDRD_ = 0;
+//
+//	wire COMMON_DI_PORT = (_TECHMAP_CONNMAP_DIA_ == _TECHMAP_CONNMAP_DIB_) &
+//		(_TECHMAP_CONNMAP_DIA_ == _TECHMAP_CONNMAP_DIB_) &
+//		(_TECHMAP_CONNMAP_DIA_ == _TECHMAP_CONNMAP_DID_);
+//
+//	wire COMMON_ADDR_PORT = (_TECHMAP_CONNMAP_ADDRA_ == _TECHMAP_CONNMAP_ADDRB_) &
+//		(_TECHMAP_CONNMAP_ADDRA_ == _TECHMAP_CONNMAP_ADDRC_) &
+//		(_TECHMAP_CONNMAP_ADDRA_ == _TECHMAP_CONNMAP_ADDRD_);
+//
+//	wire DOD_TO_STUB;
+//	wire DOC_TO_STUB;
+//	wire DOB_TO_STUB;
+//	wire DOA_TO_STUB;
+//
+//	wire GROUNDED_DID_PORT = (_TECHMAP_CONNMAP_DID_ == 0);
+//
+//	if(!GROUNDED_DID_PORT) begin
+//		SPRAM64 #(
+//			.INIT(INIT_D),
+//			.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
+//		) dram1 (
+//			.DI1(DID_IN),
+//			.A(ADDRD),
+//			.CLK(WCLK),
+//			.WE(WE),
+//			.O6(DOD_TO_STUB)
+//		);
+//	end
+//
+//	if(!GROUNDED_DID_PORT) begin
+//		DRAM_4_OUTPUT_STUB stub (
+//			.DOD(DOD_TO_STUB), .DOD_OUT(DOD),
+//			.DOC(DOC_TO_STUB), .DOC_OUT(DOC),
+//			.DOB(DOB_TO_STUB), .DOB_OUT(DOB),
+//			.DOA(DOA_TO_STUB), .DOA_OUT(DOA)
+//		);
+//	end else begin
+//		DRAM_4_OUTPUT_STUB stub (
+//			.DOC(DOC_TO_STUB), .DOC_OUT(DOC),
+//			.DOB(DOB_TO_STUB), .DOB_OUT(DOB),
+//			.DOA(DOA_TO_STUB), .DOA_OUT(DOA)
+//		);
+//	end
+//endmodule
+
 module RAM64X1D (
   output DPO, SPO,
   input  D, WCLK, WE,
@@ -312,30 +394,33 @@ module RAM64X1D (
 
 	wire [5:0] WA = {A5, A4, A3, A2, A1, A0};
 	wire [5:0] DPRA = {DPRA5, DPRA4, DPRA3, DPRA2, DPRA1, DPRA0};
+	wire SPO_FORCE, DPO_FORCE;
 
-	// It is important that the SPRAM64 block name be sorted less than the
-	// DPRAM64 block.  This is because VPR packs in order of apperance.
 	SPRAM64 #(
 		.INIT(INIT),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) dram0 (
+	) dram1 (
 		.DI1(D),
 		.A(WA),
 		.CLK(WCLK),
 		.WE(WE),
-		.O6(SPO)
+		.O6(SPO_FORCE)
 	);
 	DPRAM64 #(
 		.INIT(INIT),
 		.IS_WCLK_INVERTED(IS_WCLK_INVERTED)
-	) dram1 (
+	) dram0 (
 		.DI1(D),
 		.A(DPRA),
 		.WA(WA),
 		.CLK(WCLK),
 		.WE(WE),
-		.O6(DPO)
+		.O6(DPO_FORCE)
 	);
+
+	DRAM_2_OUTPUT_STUB stub (
+		.SPO(SPO_FORCE), .DPO(DPO_FORCE),
+		.SPO_OUT(SPO), .DPO_OUT(DPO));
 endmodule
 
 module RAM64X1S (

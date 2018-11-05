@@ -88,9 +88,16 @@ endmodule
 module XORCY(output O, input CI, LI);
   assign O = CI ^ LI;
 endmodule
-`else
+`endif
+
 module CARRY0(output CO_CHAIN, CO_FABRIC, O, input CI, CI_INIT, DI, S);
-  assign CI_COMBINE = CI | CI_INIT;
+  parameter CYINIT_FABRIC = 0;
+  wire CI_COMBINE;
+  if(CYINIT_FABRIC) begin
+    assign CI_COMBINE = CI_INIT;
+  end else begin
+    assign CI_COMBINE = CI;
+  end
   assign CO_CHAIN = S ? CI_COMBINE : DI;
   assign CO_FABRIC = S ? CI_COMBINE : DI;
   assign O = S ^ CI_COMBINE;
@@ -134,8 +141,6 @@ endmodule
 module CYINIT_FABRIC(output CI_CHAIN, input CI_FABRIC);
   assign CI_CHAIN = CI_FABRIC;
 endmodule
-
-`endif
 
 module MUXF6(output O, input I0, I1, S);
   assign O = S ? I1 : I0;
@@ -357,4 +362,27 @@ module SPRAM32 (
     mem1[A] <= DI1;
     mem2[A] <= DI2;
   end
+endmodule
+
+
+// To ensure that all DRAMs are co-located within a SLICEM, this block is
+// a simple passthrough black box to allow a pack pattern for dual port DRAMs.
+module DRAM_2_OUTPUT_STUB(
+    input SPO, DPO,
+    output SPO_OUT, DPO_OUT
+);
+  wire SPO_OUT;
+  wire DPO_OUT;
+  assign SPO_OUT = SPO;
+  assign DPO_OUT = DPO;
+endmodule
+
+module DRAM_4_OUTPUT_STUB(
+    input DOA, DOB, DOC, DOD,
+    output DOA_OUT, DOB_OUT, DOC_OUT, DOD_OUT
+);
+  assign DOA_OUT = DOA;
+  assign DOB_OUT = DOB;
+  assign DOC_OUT = DOC;
+  assign DOD_OUT = DOD;
 endmodule

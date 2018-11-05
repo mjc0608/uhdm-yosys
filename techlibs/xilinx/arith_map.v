@@ -120,7 +120,7 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 	// If carry chain is being initialized to a constant, techmap the constant
 	// source.  Otherwise techmap the fabric source.
 	generate for (i = 0; i < 1; i = i + 1) begin:slice
-		CARRY0 carry(
+		CARRY0 #(.CYINIT_FABRIC(1)) carry(
 			.CI_INIT(CI),
 			.DI(DI[0]),
 			.S(S[0]),
