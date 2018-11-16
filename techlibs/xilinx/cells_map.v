@@ -208,3 +208,71 @@ module \$lut (A, Y);
   endgenerate
 endmodule
 `endif
+
+module FDRE (output reg Q, input C, CE, D, R);
+  parameter [0:0] INIT = 1'b0;
+  parameter [0:0] IS_C_INVERTED = 1'b0;
+  parameter [0:0] IS_D_INVERTED = 1'b0;
+  parameter [0:0] IS_R_INVERTED = 1'b0;
+
+  FDRE_ZINI #(
+      .ZINI(!INIT)
+  ) _TECHMAP_REPLACE_ (
+      .Q(Q),
+      .C(C),
+      .CE(CE),
+      .D(D),
+      .R(R)
+  );
+endmodule
+
+module FDSE (output reg Q, input C, CE, D, S);
+  parameter [0:0] INIT = 1'b0;
+  parameter [0:0] IS_C_INVERTED = 1'b0;
+  parameter [0:0] IS_D_INVERTED = 1'b0;
+  parameter [0:0] IS_S_INVERTED = 1'b0;
+
+  FDSE_ZINI #(
+      .ZINI(!INIT)
+  ) _TECHMAP_REPLACE_ (
+      .Q(Q),
+      .C(C),
+      .CE(CE),
+      .D(D),
+      .S(S)
+  );
+endmodule
+
+module FDCE (output reg Q, input C, CE, D, CLR);
+  parameter [0:0] INIT = 1'b0;
+  parameter [0:0] IS_C_INVERTED = 1'b0;
+  parameter [0:0] IS_D_INVERTED = 1'b0;
+  parameter [0:0] IS_CLR_INVERTED = 1'b0;
+
+  FDSE_ZINI #(
+      .ZINI(!INIT)
+  ) _TECHMAP_REPLACE_ (
+      .Q(Q),
+      .C(C),
+      .CE(CE),
+      .D(D),
+      .CLR(CLR)
+  );
+endmodule
+
+module FDPE (output reg Q, input C, CE, D, PRE);
+  parameter [0:0] INIT = 1'b0;
+  parameter [0:0] IS_C_INVERTED = 1'b0;
+  parameter [0:0] IS_D_INVERTED = 1'b0;
+  parameter [0:0] IS_PRE_INVERTED = 1'b0;
+
+  FDPE_ZINIT #(
+      .ZINIT(!INIT)
+  ) _TECHMAP_REPLACE_ (
+      .Q(Q),
+      .C(C),
+      .CE(CE),
+      .D(D),
+      .PRE(PRE)
+  );
+endmodule
