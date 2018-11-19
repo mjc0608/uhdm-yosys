@@ -109,39 +109,6 @@ module CARRY(output CO_CHAIN, CO_FABRIC, O, input CI, DI, S);
   assign O = S ^ CI;
 endmodule
 
-module CARRY_INIT0(output CO_CHAIN, CO_FABRIC, O, input DI, S);
-  wire CI;
-  assign CI = 0;
-  assign CO_CHAIN = S ? CI : DI;
-  assign CO_FABRIC = S ? CI : DI;
-  assign O = S ^ CI;
-endmodule
-
-module CARRY_INIT1(output CO_CHAIN, CO_FABRIC, O, input DI, S);
-  wire CI;
-  assign CI = 1;
-  assign CO_CHAIN = S ? CI : DI;
-  assign CO_FABRIC = S ? CI : DI;
-  assign O = S ^ CI;
-endmodule
-
-module CARRY_INIT_FABRIC(output CO_CHAIN, CO_FABRIC, O, input CI_FABRIC, DI, S);
-  wire CI;
-  assign CI = CI_FABRIC;
-  assign CO_CHAIN = S ? CI : DI;
-  assign CO_FABRIC = S ? CI : DI;
-  assign O = S ^ CI;
-endmodule
-
-module CYINIT_CONSTANTS(output C0, C1);
-  assign C0 = 0;
-  assign C1 = 1;
-endmodule
-
-module CYINIT_FABRIC(output CI_CHAIN, input CI_FABRIC);
-  assign CI_CHAIN = CI_FABRIC;
-endmodule
-
 module MUXF6(output O, input I0, I1, S);
   assign O = S ? I1 : I0;
 endmodule
