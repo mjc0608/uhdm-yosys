@@ -225,7 +225,8 @@ module RAM64X1D (
   parameter IS_WCLK_INVERTED = 1'b0;
   wire [5:0] a = {A5, A4, A3, A2, A1, A0};
   wire [5:0] dpra = {DPRA5, DPRA4, DPRA3, DPRA2, DPRA1, DPRA0};
-  reg [63:0] mem = INIT;
+  reg [63:0] mem;
+  initial mem <= INIT;
   assign SPO = mem[a];
   assign DPO = mem[dpra];
   wire clk = WCLK ^ IS_WCLK_INVERTED;
@@ -239,7 +240,8 @@ module RAM128X1D (
 );
   parameter INIT = 128'h0;
   parameter IS_WCLK_INVERTED = 1'b0;
-  reg [127:0] mem = INIT;
+  reg [127:0] mem;
+  initial mem <= INIT;
   assign SPO = mem[A];
   assign DPO = mem[DPRA];
   wire clk = WCLK ^ IS_WCLK_INVERTED;
@@ -257,7 +259,8 @@ module DPRAM128 (
   parameter HIGH_WA7_SELECT = 1'b0;
   wire [5:0] A;
   wire [5:0] WA;
-  reg [63:0] mem = INIT;
+  reg [63:0] mem;
+  initial mem <= INIT;
   assign O6 = mem[A];
   wire clk = CLK ^ IS_WCLK_INVERTED;
   always @(posedge clk) if (WE & (WA7 == HIGH_WA7_SELECT)) mem[WA] <= DI1;
@@ -272,7 +275,8 @@ module SPRAM128 (
   parameter IS_WCLK_INVERTED = 1'b0;
   parameter HIGH_WA7_SELECT = 1'b0;
   wire [5:0] A;
-  reg [63:0] mem = INIT;
+  reg [63:0] mem;
+  initial mem <= INIT;
   assign O6 = mem[A];
   wire clk = CLK ^ IS_WCLK_INVERTED;
   always @(posedge clk) if (WE & (WA7 == HIGH_WA7_SELECT)) mem[A] <= DI1;
@@ -291,7 +295,8 @@ module DPRAM64 (
   parameter HIGH_WA8_SELECT = 1'b0;
   wire [5:0] A;
   wire [5:0] WA;
-  reg [63:0] mem = INIT;
+  reg [63:0] mem;
+  initial mem <= INIT;
   assign O6 = mem[A];
   wire clk = CLK ^ IS_WCLK_INVERTED;
 
@@ -313,7 +318,8 @@ module SPRAM64 (
   parameter HIGH_WA7_SELECT = 1'b0;
   parameter HIGH_WA8_SELECT = 1'b0;
   wire [5:0] A;
-  reg [63:0] mem = INIT;
+  reg [63:0] mem;
+  initial mem <= INIT;
   assign O6 = mem[A];
   wire clk = CLK ^ IS_WCLK_INVERTED;
 
@@ -333,8 +339,10 @@ module DPRAM32 (
   parameter IS_WCLK_INVERTED = 1'b0;
   wire [4:0] A;
   wire [4:0] WA;
-  reg [31:0] mem1 = INIT_00;
-  reg [31:0] mem2 = INIT_01;
+  reg [31:0] mem1;
+  reg [31:0] mem2;
+  initial mem1 <= INIT_00;
+  initial mem2 <= INIT_01;
   assign O6 = mem1[A];
   assign O5 = mem2[A];
   wire clk = CLK ^ IS_WCLK_INVERTED;
@@ -353,8 +361,10 @@ module SPRAM32 (
   parameter [31:0] INIT_01 = 32'h0;
   parameter IS_WCLK_INVERTED = 1'b0;
   wire [4:0] A;
-  reg [31:0] mem1 = INIT_00;
-  reg [31:0] mem2 = INIT_01;
+  reg [31:0] mem1;
+  reg [31:0] mem2;
+  initial mem1 <= INIT_00;
+  initial mem2 <= INIT_01;
   assign O6 = mem1[A];
   assign O5 = mem2[A];
   wire clk = CLK ^ IS_WCLK_INVERTED;
