@@ -88,22 +88,26 @@ endmodule
 module XORCY(output O, input CI, LI);
   assign O = CI ^ LI;
 endmodule
-`else
+`endif
+
+module CARRY0(output CO_CHAIN, CO_FABRIC, O, input CI, CI_INIT, DI, S);
+  parameter CYINIT_FABRIC = 0;
+  wire CI_COMBINE;
+  if(CYINIT_FABRIC) begin
+    assign CI_COMBINE = CI_INIT;
+  end else begin
+    assign CI_COMBINE = CI;
+  end
+  assign CO_CHAIN = S ? CI_COMBINE : DI;
+  assign CO_FABRIC = S ? CI_COMBINE : DI;
+  assign O = S ^ CI_COMBINE;
+endmodule
+
 module CARRY(output CO_CHAIN, CO_FABRIC, O, input CI, DI, S);
   assign CO_CHAIN = S ? CI : DI;
   assign CO_FABRIC = S ? CI : DI;
   assign O = S ^ CI;
 endmodule
-
-module CYINIT_CONSTANTS(output C0, C1);
-  assign C0 = 0;
-  assign C1 = 1;
-endmodule
-
-module CYINIT_FABRIC(output CI_CHAIN, input CI_FABRIC);
-  assign CI_CHAIN = CI_FABRIC;
-endmodule
-`endif
 
 module MUXF6(output O, input I0, I1, S);
   assign O = S ? I1 : I0;
@@ -125,36 +129,36 @@ module CARRY4(output [3:0] CO, O, input CI, CYINIT, input [3:0] DI, S);
   assign CO[3] = S[3] ? CO[2] : DI[3];
 endmodule
 
-module FDRE (output reg Q, input C, CE, D, R);
-  parameter [0:0] INIT = 1'b0;
+module FDRE_ZINI (output reg Q, input C, CE, D, R);
+  parameter [0:0] ZINI = 1'b0;
   parameter [0:0] IS_C_INVERTED = 1'b0;
   parameter [0:0] IS_D_INVERTED = 1'b0;
   parameter [0:0] IS_R_INVERTED = 1'b0;
-  initial Q <= INIT;
+  initial Q <= !ZINI;
   generate case (|IS_C_INVERTED)
     1'b0: always @(posedge C) if (R == !IS_R_INVERTED) Q <= 1'b0; else if (CE) Q <= D ^ IS_D_INVERTED;
     1'b1: always @(negedge C) if (R == !IS_R_INVERTED) Q <= 1'b0; else if (CE) Q <= D ^ IS_D_INVERTED;
   endcase endgenerate
 endmodule
 
-module FDSE (output reg Q, input C, CE, D, S);
-  parameter [0:0] INIT = 1'b0;
+module FDSE_ZINI (output reg Q, input C, CE, D, S);
+  parameter [0:0] ZINI = 1'b0;
   parameter [0:0] IS_C_INVERTED = 1'b0;
   parameter [0:0] IS_D_INVERTED = 1'b0;
   parameter [0:0] IS_S_INVERTED = 1'b0;
-  initial Q <= INIT;
+  initial Q <= !ZINI;
   generate case (|IS_C_INVERTED)
     1'b0: always @(posedge C) if (S == !IS_S_INVERTED) Q <= 1'b1; else if (CE) Q <= D ^ IS_D_INVERTED;
     1'b1: always @(negedge C) if (S == !IS_S_INVERTED) Q <= 1'b1; else if (CE) Q <= D ^ IS_D_INVERTED;
   endcase endgenerate
 endmodule
 
-module FDCE (output reg Q, input C, CE, D, CLR);
-  parameter [0:0] INIT = 1'b0;
+module FDCE_ZINI (output reg Q, input C, CE, D, CLR);
+  parameter [0:0] ZINI = 1'b0;
   parameter [0:0] IS_C_INVERTED = 1'b0;
   parameter [0:0] IS_D_INVERTED = 1'b0;
   parameter [0:0] IS_CLR_INVERTED = 1'b0;
-  initial Q <= INIT;
+  initial Q <= !ZINI;
   generate case ({|IS_C_INVERTED, |IS_CLR_INVERTED})
     2'b00: always @(posedge C, posedge CLR) if ( CLR) Q <= 1'b0; else if (CE) Q <= D ^ IS_D_INVERTED;
     2'b01: always @(posedge C, negedge CLR) if (!CLR) Q <= 1'b0; else if (CE) Q <= D ^ IS_D_INVERTED;
@@ -163,12 +167,12 @@ module FDCE (output reg Q, input C, CE, D, CLR);
   endcase endgenerate
 endmodule
 
-module FDPE (output reg Q, input C, CE, D, PRE);
-  parameter [0:0] INIT = 1'b0;
+module FDPE_ZINI (output reg Q, input C, CE, D, PRE);
+  parameter [0:0] ZINI = 1'b0;
   parameter [0:0] IS_C_INVERTED = 1'b0;
   parameter [0:0] IS_D_INVERTED = 1'b0;
   parameter [0:0] IS_PRE_INVERTED = 1'b0;
-  initial Q <= INIT;
+  initial Q <= !ZINI;
   generate case ({|IS_C_INVERTED, |IS_PRE_INVERTED})
     2'b00: always @(posedge C, posedge PRE) if ( PRE) Q <= 1'b1; else if (CE) Q <= D ^ IS_D_INVERTED;
     2'b01: always @(posedge C, negedge PRE) if (!PRE) Q <= 1'b1; else if (CE) Q <= D ^ IS_D_INVERTED;
@@ -177,6 +181,7 @@ module FDPE (output reg Q, input C, CE, D, PRE);
   endcase endgenerate
 endmodule
 
+`ifndef _EXPLICIT_DRAM
 module RAM64X1D (
   output DPO, SPO,
   input  D, WCLK, WE,
@@ -187,7 +192,8 @@ module RAM64X1D (
   parameter IS_WCLK_INVERTED = 1'b0;
   wire [5:0] a = {A5, A4, A3, A2, A1, A0};
   wire [5:0] dpra = {DPRA5, DPRA4, DPRA3, DPRA2, DPRA1, DPRA0};
-  reg [63:0] mem = INIT;
+  reg [63:0] mem;
+  initial mem <= INIT;
   assign SPO = mem[a];
   assign DPO = mem[dpra];
   wire clk = WCLK ^ IS_WCLK_INVERTED;
@@ -201,9 +207,159 @@ module RAM128X1D (
 );
   parameter INIT = 128'h0;
   parameter IS_WCLK_INVERTED = 1'b0;
-  reg [127:0] mem = INIT;
+  reg [127:0] mem;
+  initial mem <= INIT;
   assign SPO = mem[A];
   assign DPO = mem[DPRA];
   wire clk = WCLK ^ IS_WCLK_INVERTED;
   always @(posedge clk) if (WE) mem[A] <= D;
+endmodule
+`endif
+
+module DPRAM128 (
+  output O6,
+  input  DI1, CLK, WE, WA7,
+  input [5:0] A, WA,
+);
+  parameter [63:0] INIT = 64'h0;
+  parameter IS_WCLK_INVERTED = 1'b0;
+  parameter HIGH_WA7_SELECT = 1'b0;
+  wire [5:0] A;
+  wire [5:0] WA;
+  reg [63:0] mem;
+  initial mem <= INIT;
+  assign O6 = mem[A];
+  wire clk = CLK ^ IS_WCLK_INVERTED;
+  always @(posedge clk) if (WE & (WA7 == HIGH_WA7_SELECT)) mem[WA] <= DI1;
+endmodule
+
+module SPRAM128 (
+  output O6,
+  input  DI1, CLK, WE, WA7,
+  input [5:0] A
+);
+  parameter [63:0] INIT = 64'h0;
+  parameter IS_WCLK_INVERTED = 1'b0;
+  parameter HIGH_WA7_SELECT = 1'b0;
+  wire [5:0] A;
+  reg [63:0] mem;
+  initial mem <= INIT;
+  assign O6 = mem[A];
+  wire clk = CLK ^ IS_WCLK_INVERTED;
+  always @(posedge clk) if (WE & (WA7 == HIGH_WA7_SELECT)) mem[A] <= DI1;
+endmodule
+
+module DPRAM64 (
+  output O6,
+  input  DI1, CLK, WE, WA7, WA8,
+  input [5:0] A, WA
+);
+  parameter [63:0] INIT = 64'h0;
+  parameter IS_WCLK_INVERTED = 1'b0;
+  parameter WA7USED = 1'b0;
+  parameter WA8USED = 1'b0;
+  parameter HIGH_WA7_SELECT = 1'b0;
+  parameter HIGH_WA8_SELECT = 1'b0;
+  wire [5:0] A;
+  wire [5:0] WA;
+  reg [63:0] mem;
+  initial mem <= INIT;
+  assign O6 = mem[A];
+  wire clk = CLK ^ IS_WCLK_INVERTED;
+
+  wire WA7SELECT = !WA7USED | (WA7 == HIGH_WA7_SELECT);
+  wire WA8SELECT = !WA8USED | (WA8 == HIGH_WA8_SELECT);
+  wire address_selected = WA7SELECT & WA8SELECT;
+  always @(posedge clk) if (WE & address_selected) mem[WA] <= DI1;
+endmodule
+
+module SPRAM64 (
+  output O6,
+  input  DI1, CLK, WE, WA7, WA8,
+  input [5:0] A
+);
+  parameter [63:0] INIT = 64'h0;
+  parameter IS_WCLK_INVERTED = 1'b0;
+  parameter WA7USED = 1'b0;
+  parameter WA8USED = 1'b0;
+  parameter HIGH_WA7_SELECT = 1'b0;
+  parameter HIGH_WA8_SELECT = 1'b0;
+  wire [5:0] A;
+  reg [63:0] mem;
+  initial mem <= INIT;
+  assign O6 = mem[A];
+  wire clk = CLK ^ IS_WCLK_INVERTED;
+
+  wire WA7SELECT = !WA7USED | (WA7 == HIGH_WA7_SELECT);
+  wire WA8SELECT = !WA8USED | (WA8 == HIGH_WA8_SELECT);
+  wire address_selected = WA7SELECT & WA8SELECT;
+  always @(posedge clk) if (WE & address_selected) mem[A] <= DI1;
+endmodule
+
+module DPRAM32 (
+  output O6, O5,
+  input  DI1, DI2, CLK, WE,
+  input [4:0] A, WA
+);
+  parameter [31:0] INIT_00 = 32'h0;
+  parameter [31:0] INIT_01 = 32'h0;
+  parameter IS_WCLK_INVERTED = 1'b0;
+  wire [4:0] A;
+  wire [4:0] WA;
+  reg [31:0] mem1;
+  reg [31:0] mem2;
+  initial mem1 <= INIT_00;
+  initial mem2 <= INIT_01;
+  assign O6 = mem1[A];
+  assign O5 = mem2[A];
+  wire clk = CLK ^ IS_WCLK_INVERTED;
+  always @(posedge clk) if (WE) begin
+    mem1[WA] <= DI1;
+    mem2[WA] <= DI2;
+  end
+endmodule
+
+module SPRAM32 (
+  output O6, O5,
+  input  DI1, DI2, CLK, WE,
+  input [4:0] A
+);
+  parameter [31:0] INIT_00 = 32'h0;
+  parameter [31:0] INIT_01 = 32'h0;
+  parameter IS_WCLK_INVERTED = 1'b0;
+  wire [4:0] A;
+  reg [31:0] mem1;
+  reg [31:0] mem2;
+  initial mem1 <= INIT_00;
+  initial mem2 <= INIT_01;
+  assign O6 = mem1[A];
+  assign O5 = mem2[A];
+  wire clk = CLK ^ IS_WCLK_INVERTED;
+  always @(posedge clk) if (WE) begin
+    mem1[A] <= DI1;
+    mem2[A] <= DI2;
+  end
+endmodule
+
+
+// To ensure that all DRAMs are co-located within a SLICEM, this block is
+// a simple passthrough black box to allow a pack pattern for dual port DRAMs.
+module DRAM_2_OUTPUT_STUB(
+    input SPO, DPO,
+    output SPO_OUT, DPO_OUT
+);
+  wire SPO_OUT;
+  wire DPO_OUT;
+  assign SPO_OUT = SPO;
+  assign DPO_OUT = DPO;
+endmodule
+
+module DRAM_4_OUTPUT_STUB(
+    input DOA, DOB, DOC, DOD,
+    output DOA_OUT, DOB_OUT, DOC_OUT, DOD_OUT
+);
+  assign DOA_OUT = DOA;
+  assign DOB_OUT = DOB;
+  assign DOC_OUT = DOC;
+  assign DOD_OUT = DOD;
 endmodule

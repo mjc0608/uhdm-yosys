@@ -189,7 +189,7 @@ struct SynthXilinxPass : public Pass
 		{
 			if (vpr)
 			{
-				Pass::call(design, "read_verilog -lib -D_EXPLICIT_CARRY +/xilinx/cells_sim.v");
+				Pass::call(design, "read_verilog -lib -D_EXPLICIT_CARRY -D_EXPLICIT_DRAM +/xilinx/cells_sim.v");
 			} else {
 				Pass::call(design, "read_verilog -lib +/xilinx/cells_sim.v");
 			}
@@ -218,7 +218,14 @@ struct SynthXilinxPass : public Pass
 		if (check_label(active, run_from, run_to, "dram"))
 		{
 			Pass::call(design, "memory_bram -rules +/xilinx/drams.txt");
-			Pass::call(design, "techmap -map +/xilinx/drams_map.v");
+			if (vpr)
+			{
+				Pass::call(design, "techmap -map +/xilinx/drams_map.v -D _EXPLICIT_DRAM");
+			}
+			else
+			{
+				Pass::call(design, "techmap -map +/xilinx/drams_map.v");
+			}
 		}
 
 		if (check_label(active, run_from, run_to, "fine"))
