@@ -249,7 +249,7 @@ module FDCE (output reg Q, input C, CE, D, CLR);
   parameter [0:0] IS_D_INVERTED = 1'b0;
   parameter [0:0] IS_CLR_INVERTED = 1'b0;
 
-  FDSE_ZINI #(
+  FDCE_ZINI #(
       .ZINI(!INIT)
   ) _TECHMAP_REPLACE_ (
       .Q(Q),
@@ -266,8 +266,8 @@ module FDPE (output reg Q, input C, CE, D, PRE);
   parameter [0:0] IS_D_INVERTED = 1'b0;
   parameter [0:0] IS_PRE_INVERTED = 1'b0;
 
-  FDPE_ZINIT #(
-      .ZINIT(!INIT)
+  FDPE_ZINI #(
+      .ZINI(!INIT)
   ) _TECHMAP_REPLACE_ (
       .Q(Q),
       .C(C),
