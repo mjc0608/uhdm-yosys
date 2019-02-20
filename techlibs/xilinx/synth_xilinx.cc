@@ -63,6 +63,12 @@ struct SynthXilinxPass : public Pass
 		log("        generate an output netlist (and BLIF file) suitable for VPR\n");
 		log("        (this feature is experimental and incomplete)\n");
 		log("\n");
+		log("    -no-brams\n");
+		log("        disable infering of block rams\n");
+		log("\n");
+		log("    -no-drams\n");
+		log("        disable infering of distributed rams\n");
+		log("\n");
 		log("    -run <from_label>:<to_label>\n");
 		log("        only run the commands between the labels (see below). an empty\n");
 		log("        from label is synonymous to 'begin', and empty to label is\n");
@@ -90,11 +96,11 @@ struct SynthXilinxPass : public Pass
 		log("    coarse:\n");
 		log("        synth -run coarse\n");
 		log("\n");
-		log("    bram:\n");
+		log("    bram: (only executed when '-no-brams' is not given)\n");
 		log("        memory_bram -rules +/xilinx/brams.txt\n");
 		log("        techmap -map +/xilinx/brams_map.v\n");
 		log("\n");
-		log("    dram:\n");
+		log("    dram: (only executed when '-no-drams' is not given)\n");
 		log("        memory_bram -rules +/xilinx/drams.txt\n");
 		log("        techmap -map +/xilinx/drams_map.v\n");
 		log("\n");
@@ -108,7 +114,8 @@ struct SynthXilinxPass : public Pass
 		log("        opt -fast\n");
 		log("\n");
 		log("    map_luts:\n");
-		log("        abc -luts 2:2,3,6:5,10,20 [-dff]\n");
+		log("        abc -luts 2:2,3,6:5,10,20 [-dff] (without '-vpr' only!)\n");
+		log("        abc -lut 5 [-dff] (with '-vpr' only!)\n");
 		log("        clean\n");
 		log("\n");
 		log("    map_cells:\n");
