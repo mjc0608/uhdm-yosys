@@ -1,3 +1,21 @@
+/*
+ *  yosys -- Yosys Open SYnthesis Suite
+ *
+ *  Copyright (C) 2012  Clifford Wolf <clifford@clifford.at>
+ *
+ *  Permission to use, copy, modify, and/or distribute this software for any
+ *  purpose with or without fee is hereby granted, provided that the above
+ *  copyright notice and this permission notice appear in all copies.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ *  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ *  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ *  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ *  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ *  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ *  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ */
 
 // See Xilinx UG953 and UG474 for a description of the cell types below.
 // http://www.xilinx.com/support/documentation/user_guides/ug474_7Series_CLB.pdf
@@ -80,10 +98,6 @@ module LUT6(output O, input I0, I1, I2, I3, I4, I5);
   assign O = I0 ? s1[1] : s1[0];
 endmodule
 
-module MUXCY(output O, input CI, DI, S);
-  assign O = S ? CI : DI;
-endmodule
-
 module MUXF7(output O, input I0, I1, S);
   assign O = S ? I1 : I0;
 endmodule
@@ -92,18 +106,44 @@ module MUXF8(output O, input I0, I1, S);
   assign O = S ? I1 : I0;
 endmodule
 
+module MUXCY(output O, input CI, DI, S);
+  assign O = S ? CI : DI;
+endmodule
+
 module XORCY(output O, input CI, LI);
   assign O = CI ^ LI;
 endmodule
 
 module CARRY4(output [3:0] CO, O, input CI, CYINIT, input [3:0] DI, S);
-  parameter [0:0] IS_INITIALIZED = 1'd0; // A non-existing parameter added on purpose for later use by VPR.
-  assign O = S ^ {CO[2:0], (IS_INITIALIZED == 1'd1) ? CYINIT : CI};
+  assign O = S ^ {CO[2:0], CYINIT | CI};
   assign CO[0] = S[0] ? CI | CYINIT : DI[0];
   assign CO[1] = S[1] ? CO[0] : DI[1];
   assign CO[2] = S[2] ? CO[1] : DI[2];
   assign CO[3] = S[3] ? CO[2] : DI[3];
 endmodule
+
+`ifdef _EXPLICIT_CARRY
+
+module CARRY0(output CO_CHAIN, CO_FABRIC, O, input CI, CI_INIT, DI, S);
+  parameter CYINIT_FABRIC = 0;
+  wire CI_COMBINE;
+  if(CYINIT_FABRIC) begin
+    assign CI_COMBINE = CI_INIT;
+  end else begin
+    assign CI_COMBINE = CI;
+  end
+  assign CO_CHAIN = S ? CI_COMBINE : DI;
+  assign CO_FABRIC = S ? CI_COMBINE : DI;
+  assign O = S ^ CI_COMBINE;
+endmodule
+
+module CARRY(output CO_CHAIN, CO_FABRIC, O, input CI, DI, S);
+  assign CO_CHAIN = S ? CI : DI;
+  assign CO_FABRIC = S ? CI : DI;
+  assign O = S ^ CI;
+endmodule
+
+`endif
 
 module FDRE (output reg Q, input C, CE, D, R);
   parameter [0:0] INIT = 1'b0;
@@ -177,3 +217,4 @@ module RAM128X1D (
   wire clk = WCLK;
   always @(posedge clk) if (WE) mem[A] <= D;
 endmodule
+
