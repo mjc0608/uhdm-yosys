@@ -4247,6 +4247,12 @@ compatible with 7-Series Xilinx devices.
         generate an output netlist (and BLIF file) suitable for VPR.
         (this feature is experimental and incomplete)
 
+    -no-brams
+		disable infering of block rams
+
+    -no-drams
+        disable infering of distributed rams
+
     -run <from_label>:<to_label>
         only run the commands between the labels (see below). an empty
         from label is synonymous to 'begin', and empty to label is
@@ -4274,11 +4280,11 @@ The following commands are executed by this synthesis command:
     coarse:
         synth -run coarse
 
-    bram:
+    bram: (only executed when '-no-brams' is not given)
         memory_bram -rules +/xilinx/brams.txt
         techmap -map +/xilinx/brams_map.v
 
-    dram:
+    dram: (only executed when '-no-drams' is not given)
         memory_bram -rules +/xilinx/drams.txt
         techmap -map +/xilinx/drams_map.v
 
@@ -4292,7 +4298,8 @@ The following commands are executed by this synthesis command:
         opt -fast
 
     map_luts:
-        abc -luts 2:2,3,6:5,10,20 [-dff]
+        abc -luts 2:2,3,6:5,10,20 [-dff] (without '-vpr' only!)
+        abc -lut 5 [-dff] (with '-vpr' only!)
         clean
 
     map_cells:
