@@ -72,6 +72,7 @@ PKG_CONFIG ?= pkg-config
 SED ?= sed
 BISON ?= bison
 STRIP ?= strip
+AWK ?= awk
 
 ifeq ($(OS), Darwin)
 PLUGIN_LDFLAGS += -undefined dynamic_lookup
@@ -109,7 +110,7 @@ OBJS = kernel/version_$(GIT_REV).o
 # is just a symlink to your actual ABC working directory, as 'make mrproper'
 # will remove the 'abc' directory and you do not want to accidentally
 # delete your work on ABC..
-ABCREV = 14d985a
+ABCREV = 2ddc57d
 ABCPULL = 1
 ABCURL ?= https://github.com/berkeley-abc/abc
 ABCMKARGS = CC="$(CXX)" CXX="$(CXX)" ABC_USE_LIBSTDCXX=1
@@ -160,7 +161,7 @@ ABCMKARGS += ARCHFLAGS="-DABC_USE_STDINT_H"
 else ifeq ($(CONFIG),gcc-static)
 LD = $(CXX)
 LDFLAGS := $(filter-out -rdynamic,$(LDFLAGS)) -static
-LDLIBS := $(filter-out -lrt,$(LDLIBS)) 
+LDLIBS := $(filter-out -lrt,$(LDLIBS))
 CXXFLAGS := $(filter-out -fPIC,$(CXXFLAGS))
 CXXFLAGS += -std=c++11 -Os
 ABCMKARGS = CC="$(CC)" CXX="$(CXX)" LD="$(LD)" ABC_USE_LIBSTDCXX=1 LIBS="-lm -lpthread -static" OPTFLAGS="-O" \
@@ -356,10 +357,14 @@ endif
 endif
 
 ifeq ($(ENABLE_VERIFIC),1)
-VERIFIC_DIR ?= /usr/local/src/verific_lib_eval
-VERIFIC_COMPONENTS ?= verilog vhdl database util containers sdf hier_tree
+VERIFIC_DIR ?= /usr/local/src/verific_lib
+VERIFIC_COMPONENTS ?= verilog vhdl database util containers hier_tree
 CXXFLAGS += $(patsubst %,-I$(VERIFIC_DIR)/%,$(VERIFIC_COMPONENTS)) -DYOSYS_ENABLE_VERIFIC
+ifeq ($(OS), Darwin)
+LDLIBS += $(patsubst %,$(VERIFIC_DIR)/%/*-mac.a,$(VERIFIC_COMPONENTS)) -lz
+else
 LDLIBS += $(patsubst %,$(VERIFIC_DIR)/%/*-linux.a,$(VERIFIC_COMPONENTS)) -lz
+endif
 endif
 
 ifeq ($(ENABLE_PROTOBUF),1)
@@ -391,8 +396,8 @@ endef
 ifeq ($(PRETTY), 1)
 P_STATUS = 0
 P_OFFSET = 0
-P_UPDATE = $(eval P_STATUS=$(shell echo $(OBJS) yosys$(EXE) | gawk 'BEGIN { RS = " "; I = $(P_STATUS)+0; } $$1 == "$@" && NR > I { I = NR; } END { print I; }'))
-P_SHOW = [$(shell gawk "BEGIN { N=$(words $(OBJS) yosys$(EXE)); printf \"%3d\", $(P_OFFSET)+90*$(P_STATUS)/N; exit; }")%]
+P_UPDATE = $(eval P_STATUS=$(shell echo $(OBJS) yosys$(EXE) | $(AWK) 'BEGIN { RS = " "; I = $(P_STATUS)+0; } $$1 == "$@" && NR > I { I = NR; } END { print I; }'))
+P_SHOW = [$(shell $(AWK) "BEGIN { N=$(words $(OBJS) yosys$(EXE)); printf \"%3d\", $(P_OFFSET)+90*$(P_STATUS)/N; exit; }")%]
 P = @echo "$(if $(findstring $@,$(TARGETS) $(EXTRA_TARGETS)),$(eval P_OFFSET = 10))$(call P_UPDATE)$(call P_SHOW) Building $@";
 Q = @
 S = -s
@@ -574,6 +579,7 @@ test: $(TARGETS) $(EXTRA_TARGETS)
 	+cd tests/various && bash run-test.sh
 	+cd tests/sat && bash run-test.sh
 	+cd tests/svinterfaces && bash run-test.sh $(SEEDOPT)
+	+cd tests/opt && bash run-test.sh
 	@echo ""
 	@echo "  Passed \"make test\"."
 	@echo ""
@@ -595,7 +601,7 @@ vloghtb: $(TARGETS) $(EXTRA_TARGETS)
 ystests: $(TARGETS) $(EXTRA_TARGETS)
 	rm -rf tests/ystests
 	git clone https://github.com/YosysHQ/yosys-tests.git tests/ystests
-	+PATH="$$PWD:$$PATH" cd tests/ystests && $(MAKE)
+	+$(MAKE) PATH="$$PWD:$$PATH" -C tests/ystests
 	@echo ""
 	@echo "  Finished \"make ystests\"."
 	@echo ""
