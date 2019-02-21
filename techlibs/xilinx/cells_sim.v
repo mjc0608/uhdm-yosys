@@ -152,7 +152,7 @@ module FDRE (output reg Q, input C, CE, D, R);
 endmodule
 
 module FDSE (output reg Q, input C, CE, D, S);
-  parameter [0:0] INIT = 1'b0;
+  parameter [0:0] INIT = 1'b1;
   initial Q <= INIT;
   always @(posedge C) if (S) Q <= 1'b1; else if(CE) Q <= D;
 endmodule
@@ -164,7 +164,7 @@ module FDCE (output reg Q, input C, CE, D, CLR);
 endmodule
 
 module FDPE (output reg Q, input C, CE, D, PRE);
-  parameter [0:0] INIT = 1'b0;
+  parameter [0:0] INIT = 1'b1;
   initial Q <= INIT;
   always @(posedge C, posedge PRE) if (PRE) Q <= 1'b1; else if (CE) Q <= D;
 endmodule

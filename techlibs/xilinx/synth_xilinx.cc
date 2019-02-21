@@ -266,14 +266,9 @@ struct SynthXilinxPass : public Pass
 
 		if (check_label(active, run_from, run_to, "map_luts"))
 		{
-			if (vpr) { // VPR support only LUTs with width up to 5
-				Pass::call(design, "abc -lut 5" + string(retime ? " -dff" : ""));
-				Pass::call(design, "clean");
-			} else {
-				Pass::call(design, "abc -luts 2:2,3,6:5,10,20" + string(retime ? " -dff" : ""));
-				Pass::call(design, "clean");
-				Pass::call(design, "techmap -map +/xilinx/lut_map.v");
-			}
+			Pass::call(design, "abc -luts 2:2,3,6:5,10,20" + string(retime ? " -dff" : ""));
+			Pass::call(design, "clean");
+			Pass::call(design, "techmap -map +/xilinx/lut_map.v");
 		}
 
 		if (check_label(active, run_from, run_to, "map_cells"))
