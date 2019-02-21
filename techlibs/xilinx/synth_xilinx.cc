@@ -143,9 +143,9 @@ struct SynthXilinxPass : public Pass
 		std::string run_from, run_to;
 		bool flatten = false;
 		bool retime = false;
-        bool vpr = false;
-        bool noBrams = false;
-        bool noDrams = false;
+		bool vpr = false;
+		bool noBrams = false;
+		bool noDrams = false;
 
 		size_t argidx;
 		for (argidx = 1; argidx < args.size(); argidx++)
@@ -204,17 +204,17 @@ struct SynthXilinxPass : public Pass
 
 		if (check_label(active, run_from, run_to, "begin"))
 		{
-            if (vpr) {
-    			Pass::call(design, "read_verilog -lib -D_EXPLICIT_CARRY +/xilinx/cells_sim.v");
-            } else {
-    			Pass::call(design, "read_verilog -lib +/xilinx/cells_sim.v");
-            }
+			if (vpr) {
+				Pass::call(design, "read_verilog -lib -D_EXPLICIT_CARRY +/xilinx/cells_sim.v");
+			} else {
+				Pass::call(design, "read_verilog -lib +/xilinx/cells_sim.v");
+			}
 
 			Pass::call(design, "read_verilog -lib +/xilinx/cells_xtra.v");
 
-            if (!noBrams) {
-    			Pass::call(design, "read_verilog -lib +/xilinx/brams_bb.v");
-            }
+			if (!noBrams) {
+				Pass::call(design, "read_verilog -lib +/xilinx/brams_bb.v");
+			}
 
 			Pass::call(design, stringf("hierarchy -check %s", top_opt.c_str()));
 		}
@@ -232,18 +232,18 @@ struct SynthXilinxPass : public Pass
 
 		if (check_label(active, run_from, run_to, "bram"))
 		{
-            if (!noBrams) {
-    			Pass::call(design, "memory_bram -rules +/xilinx/brams.txt");
-    			Pass::call(design, "techmap -map +/xilinx/brams_map.v");
-            }
+			if (!noBrams) {
+				Pass::call(design, "memory_bram -rules +/xilinx/brams.txt");
+				Pass::call(design, "techmap -map +/xilinx/brams_map.v");
+			}
 		}
 
 		if (check_label(active, run_from, run_to, "dram"))
 		{
-            if (!noDrams) {
-    			Pass::call(design, "memory_bram -rules +/xilinx/drams.txt");
-	    		Pass::call(design, "techmap -map +/xilinx/drams_map.v");
-            }
+			if (!noDrams) {
+				Pass::call(design, "memory_bram -rules +/xilinx/drams.txt");
+				Pass::call(design, "techmap -map +/xilinx/drams_map.v");
+			}
 		}
 
 		if (check_label(active, run_from, run_to, "fine"))
@@ -254,11 +254,11 @@ struct SynthXilinxPass : public Pass
 			Pass::call(design, "dff2dffe");
 			Pass::call(design, "opt -full");
 
-            if (vpr) {
-    			Pass::call(design, "techmap -map +/techmap.v -map +/xilinx/arith_map.v -D _EXPLICIT_CARRY");
-            } else {
-    			Pass::call(design, "techmap -map +/techmap.v -map +/xilinx/arith_map.v -map +/xilinx/ff_map.v");
-            }
+			 if (vpr) {
+				Pass::call(design, "techmap -map +/techmap.v -map +/xilinx/arith_map.v -D _EXPLICIT_CARRY");
+			} else {
+				Pass::call(design, "techmap -map +/techmap.v -map +/xilinx/arith_map.v -map +/xilinx/ff_map.v");
+			}
 
 			Pass::call(design, "hierarchy -check");
 			Pass::call(design, "opt -fast");
@@ -266,20 +266,20 @@ struct SynthXilinxPass : public Pass
 
 		if (check_label(active, run_from, run_to, "map_luts"))
 		{
-            if (vpr) { // VPR support only LUTs with width up to 5
-    			Pass::call(design, "abc -lut 5" + string(retime ? " -dff" : ""));
-    			Pass::call(design, "clean");
-            } else {
-    			Pass::call(design, "abc -luts 2:2,3,6:5,10,20" + string(retime ? " -dff" : ""));
-    			Pass::call(design, "clean");
-    			Pass::call(design, "techmap -map +/xilinx/lut_map.v");
-            }
+			if (vpr) { // VPR support only LUTs with width up to 5
+				Pass::call(design, "abc -lut 5" + string(retime ? " -dff" : ""));
+				Pass::call(design, "clean");
+			} else {
+				Pass::call(design, "abc -luts 2:2,3,6:5,10,20" + string(retime ? " -dff" : ""));
+				Pass::call(design, "clean");
+				Pass::call(design, "techmap -map +/xilinx/lut_map.v");
+			}
 		}
 
 		if (check_label(active, run_from, run_to, "map_cells"))
 		{
-            Pass::call(design, "techmap -map +/xilinx/cells_map.v");
-		    Pass::call(design, "dffinit -ff FDRE Q INIT -ff FDCE Q INIT -ff FDPE Q INIT -ff FDSE Q INIT");
+			Pass::call(design, "techmap -map +/xilinx/cells_map.v");
+			Pass::call(design, "dffinit -ff FDRE Q INIT -ff FDCE Q INIT -ff FDPE Q INIT -ff FDSE Q INIT");
 			Pass::call(design, "clean");
 		}
 
