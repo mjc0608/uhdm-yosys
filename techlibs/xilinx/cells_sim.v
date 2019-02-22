@@ -166,7 +166,31 @@ endmodule
 module FDPE (output reg Q, input C, CE, D, PRE);
   parameter [0:0] INIT = 1'b1;
   initial Q <= INIT;
-  always @(posedge C, posedge PRE) if (PRE) Q <= 1'b1; else if (CE) Q <= D;
+  always @(negedge C, posedge PRE) if (PRE) Q <= 1'b1; else if (CE) Q <= D;
+endmodule
+
+module FDRE_1 (output reg Q, input C, CE, D, R);
+  parameter [0:0] INIT = 1'b0;
+  initial Q <= INIT;
+  always @(negedge C) if (R) Q <= 1'b0; else if(CE) Q <= D;
+endmodule
+
+module FDSE_1 (output reg Q, input C, CE, D, S);
+  parameter [0:0] INIT = 1'b1;
+  initial Q <= INIT;
+  always @(negedge C) if (S) Q <= 1'b1; else if(CE) Q <= D;
+endmodule
+
+module FDCE_1 (output reg Q, input C, CE, D, CLR);
+  parameter [0:0] INIT = 1'b0;
+  initial Q <= INIT;
+  always @(negedge C, posedge CLR) if (CLR) Q <= 1'b0; else if (CE) Q <= D;
+endmodule
+
+module FDPE_1 (output reg Q, input C, CE, D, PRE);
+  parameter [0:0] INIT = 1'b1;
+  initial Q <= INIT;
+  always @(negedge C, posedge PRE) if (PRE) Q <= 1'b1; else if (CE) Q <= D;
 endmodule
 
 module RAM32X1D (

@@ -255,7 +255,7 @@ struct SynthXilinxPass : public Pass
 			Pass::call(design, "opt -full");
 
 			 if (vpr) {
-				Pass::call(design, "techmap -map +/techmap.v -map +/xilinx/arith_map.v -D _EXPLICIT_CARRY");
+				Pass::call(design, "techmap -map +/techmap.v -map +/xilinx/arith_map.v -map +/xilinx/ff_map.v -D _EXPLICIT_CARRY");
 			} else {
 				Pass::call(design, "techmap -map +/techmap.v -map +/xilinx/arith_map.v -map +/xilinx/ff_map.v");
 			}
