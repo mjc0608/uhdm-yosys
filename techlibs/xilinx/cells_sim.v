@@ -98,6 +98,10 @@ module LUT6(output O, input I0, I1, I2, I3, I4, I5);
   assign O = I0 ? s1[1] : s1[0];
 endmodule
 
+module MUXCY(output O, input CI, DI, S);
+  assign O = S ? CI : DI;
+endmodule
+
 module MUXF7(output O, input I0, I1, S);
   assign O = S ? I1 : I0;
 endmodule
@@ -106,16 +110,12 @@ module MUXF8(output O, input I0, I1, S);
   assign O = S ? I1 : I0;
 endmodule
 
-module MUXCY(output O, input CI, DI, S);
-  assign O = S ? CI : DI;
-endmodule
-
 module XORCY(output O, input CI, LI);
   assign O = CI ^ LI;
 endmodule
 
 module CARRY4(output [3:0] CO, O, input CI, CYINIT, input [3:0] DI, S);
-  assign O = S ^ {CO[2:0], CYINIT | CI};
+  assign O = S ^ {CO[2:0], CI | CYINIT};
   assign CO[0] = S[0] ? CI | CYINIT : DI[0];
   assign CO[1] = S[1] ? CO[0] : DI[1];
   assign CO[2] = S[2] ? CO[1] : DI[2];
@@ -147,26 +147,54 @@ endmodule
 
 module FDRE (output reg Q, input C, CE, D, R);
   parameter [0:0] INIT = 1'b0;
+  parameter [0:0] IS_C_INVERTED = 1'b0;
+  parameter [0:0] IS_D_INVERTED = 1'b0;
+  parameter [0:0] IS_R_INVERTED = 1'b0;
   initial Q <= INIT;
-  always @(posedge C) if (R) Q <= 1'b0; else if(CE) Q <= D;
+  generate case (|IS_C_INVERTED)
+    1'b0: always @(posedge C) if (R == !IS_R_INVERTED) Q <= 1'b0; else if (CE) Q <= D ^ IS_D_INVERTED;
+    1'b1: always @(negedge C) if (R == !IS_R_INVERTED) Q <= 1'b0; else if (CE) Q <= D ^ IS_D_INVERTED;
+  endcase endgenerate
 endmodule
 
 module FDSE (output reg Q, input C, CE, D, S);
-  parameter [0:0] INIT = 1'b1;
+  parameter [0:0] INIT = 1'b0;
+  parameter [0:0] IS_C_INVERTED = 1'b0;
+  parameter [0:0] IS_D_INVERTED = 1'b0;
+  parameter [0:0] IS_S_INVERTED = 1'b0;
   initial Q <= INIT;
-  always @(posedge C) if (S) Q <= 1'b1; else if(CE) Q <= D;
+  generate case (|IS_C_INVERTED)
+    1'b0: always @(posedge C) if (S == !IS_S_INVERTED) Q <= 1'b1; else if (CE) Q <= D ^ IS_D_INVERTED;
+    1'b1: always @(negedge C) if (S == !IS_S_INVERTED) Q <= 1'b1; else if (CE) Q <= D ^ IS_D_INVERTED;
+  endcase endgenerate
 endmodule
 
 module FDCE (output reg Q, input C, CE, D, CLR);
   parameter [0:0] INIT = 1'b0;
+  parameter [0:0] IS_C_INVERTED = 1'b0;
+  parameter [0:0] IS_D_INVERTED = 1'b0;
+  parameter [0:0] IS_CLR_INVERTED = 1'b0;
   initial Q <= INIT;
-  always @(posedge C, posedge CLR) if (CLR) Q <= 1'b0; else if (CE) Q <= D;
+  generate case ({|IS_C_INVERTED, |IS_CLR_INVERTED})
+    2'b00: always @(posedge C, posedge CLR) if ( CLR) Q <= 1'b0; else if (CE) Q <= D ^ IS_D_INVERTED;
+    2'b01: always @(posedge C, negedge CLR) if (!CLR) Q <= 1'b0; else if (CE) Q <= D ^ IS_D_INVERTED;
+    2'b10: always @(negedge C, posedge CLR) if ( CLR) Q <= 1'b0; else if (CE) Q <= D ^ IS_D_INVERTED;
+    2'b11: always @(negedge C, negedge CLR) if (!CLR) Q <= 1'b0; else if (CE) Q <= D ^ IS_D_INVERTED;
+  endcase endgenerate
 endmodule
 
 module FDPE (output reg Q, input C, CE, D, PRE);
-  parameter [0:0] INIT = 1'b1;
+  parameter [0:0] INIT = 1'b0;
+  parameter [0:0] IS_C_INVERTED = 1'b0;
+  parameter [0:0] IS_D_INVERTED = 1'b0;
+  parameter [0:0] IS_PRE_INVERTED = 1'b0;
   initial Q <= INIT;
-  always @(negedge C, posedge PRE) if (PRE) Q <= 1'b1; else if (CE) Q <= D;
+  generate case ({|IS_C_INVERTED, |IS_PRE_INVERTED})
+    2'b00: always @(posedge C, posedge PRE) if ( PRE) Q <= 1'b1; else if (CE) Q <= D ^ IS_D_INVERTED;
+    2'b01: always @(posedge C, negedge PRE) if (!PRE) Q <= 1'b1; else if (CE) Q <= D ^ IS_D_INVERTED;
+    2'b10: always @(negedge C, posedge PRE) if ( PRE) Q <= 1'b1; else if (CE) Q <= D ^ IS_D_INVERTED;
+    2'b11: always @(negedge C, negedge PRE) if (!PRE) Q <= 1'b1; else if (CE) Q <= D ^ IS_D_INVERTED;
+  endcase endgenerate
 endmodule
 
 module FDRE_1 (output reg Q, input C, CE, D, R);
@@ -193,24 +221,6 @@ module FDPE_1 (output reg Q, input C, CE, D, PRE);
   always @(negedge C, posedge PRE) if (PRE) Q <= 1'b1; else if (CE) Q <= D;
 endmodule
 
-module RAM32X1D (
-  output DPO, SPO,
-  input  D, WCLK, WE,
-  input  A0, A1, A2, A3, A4,
-  input  DPRA0, DPRA1, DPRA2, DPRA3, DPRA4
-);
-  parameter INIT = 32'h0;
-  wire [4:0] a = {A4, A3, A2, A1, A0};
-  wire [4:0] dpra = {DPRA4, DPRA3, DPRA2, DPRA1, DPRA0};
-  reg [31:0] mem;
-  initial mem <= INIT;
-  assign SPO = mem[a];
-  assign DPO = mem[dpra];
-  wire clk = WCLK;
-  always @(posedge clk) if (WE) mem[a] <= D;
-endmodule
-
-
 module RAM64X1D (
   output DPO, SPO,
   input  D, WCLK, WE,
@@ -218,13 +228,13 @@ module RAM64X1D (
   input  DPRA0, DPRA1, DPRA2, DPRA3, DPRA4, DPRA5
 );
   parameter INIT = 64'h0;
+  parameter IS_WCLK_INVERTED = 1'b0;
   wire [5:0] a = {A5, A4, A3, A2, A1, A0};
   wire [5:0] dpra = {DPRA5, DPRA4, DPRA3, DPRA2, DPRA1, DPRA0};
-  reg [63:0] mem;
-  initial mem <= INIT;
+  reg [63:0] mem = INIT;
   assign SPO = mem[a];
   assign DPO = mem[dpra];
-  wire clk = WCLK;
+  wire clk = WCLK ^ IS_WCLK_INVERTED;
   always @(posedge clk) if (WE) mem[a] <= D;
 endmodule
 
@@ -234,11 +244,10 @@ module RAM128X1D (
   input  [6:0] A, DPRA
 );
   parameter INIT = 128'h0;
-  reg [127:0] mem;
-  initial mem <= INIT;
+  parameter IS_WCLK_INVERTED = 1'b0;
+  reg [127:0] mem = INIT;
   assign SPO = mem[A];
   assign DPO = mem[DPRA];
-  wire clk = WCLK;
+  wire clk = WCLK ^ IS_WCLK_INVERTED;
   always @(posedge clk) if (WE) mem[A] <= D;
 endmodule
-
