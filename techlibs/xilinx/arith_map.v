@@ -52,7 +52,6 @@ module _80_xilinx_lcu (P, G, CI, CO);
 				CARRY4 carry4_1st_part
 				(
 				.CYINIT(CI),
-				.CI    (1'd0),
 				.DI    (G [(Y_WIDTH - 1):i*4]),
 				.S     (S [(Y_WIDTH - 1):i*4]),
 				.CO    (CO[(Y_WIDTH - 1):i*4]),
@@ -61,7 +60,6 @@ module _80_xilinx_lcu (P, G, CI, CO);
 			end else begin
 				CARRY4 carry4_part
 				(
-				.CYINIT(1'd0),
 				.CI    (C [i*4 - 1]),
 				.DI    (G [(Y_WIDTH - 1):i*4]),
 				.S     (S [(Y_WIDTH - 1):i*4]),
@@ -77,7 +75,6 @@ module _80_xilinx_lcu (P, G, CI, CO);
 				CARRY4 carry4_1st_full
 				(
 				.CYINIT(CI),
-				.CI    (1'd0),
 				.DI    (G [((i+1)*4 - 1):i*4]),
 				.S     (S [((i+1)*4 - 1):i*4]),
 				.CO    (CO[((i+1)*4 - 1):i*4]),
@@ -86,7 +83,6 @@ module _80_xilinx_lcu (P, G, CI, CO);
 			end else begin
 				CARRY4 carry4_full
 				(
-				.CYINIT(1'd0),
 				.CI    (C [i*4 - 1]),
 				.DI    (G [((i+1)*4 - 1):i*4]),
 				.S     (S [((i+1)*4 - 1):i*4]),
@@ -183,7 +179,6 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 				CARRY4 carry4_1st_part
 				(
 				.CYINIT(CI),
-				.CI    (1'd0),
 				.DI    (DI[(Y_WIDTH - 1):i*4]),
 				.S     (S [(Y_WIDTH - 1):i*4]),
 				.O     (Y [(Y_WIDTH - 1):i*4]),
@@ -193,7 +188,6 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 			end else begin
 				CARRY4 carry4_part
 				(
-				.CYINIT(1'd0),
 				.CI    (C [i*4 - 1]),
 				.DI    (DI[(Y_WIDTH - 1):i*4]),
 				.S     (S [(Y_WIDTH - 1):i*4]),
@@ -210,7 +204,6 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 				CARRY4 carry4_1st_full
 				(
 				.CYINIT(CI),
-				.CI    (1'd0),
 				.DI    (DI[((i+1)*4 - 1):i*4]),
 				.S     (S [((i+1)*4 - 1):i*4]),
 				.O     (Y [((i+1)*4 - 1):i*4]),
@@ -220,7 +213,6 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 			end else begin
 				CARRY4 carry4_full
 				(
-				.CYINIT(1'd0),
 				.CI    (C [i*4 - 1]),
 				.DI    (DI[((i+1)*4 - 1):i*4]),
 				.S     (S [((i+1)*4 - 1):i*4]),
@@ -264,7 +256,6 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 				CARRY4_COUT carry4_1st_part
 				(
 				.CYINIT(CI),
-				.CI    (1'd0),
 				.DI    (DI[(Y_WIDTH - 1):i*4]),
 				.S     (S [(Y_WIDTH - 1):i*4]),
 				.O     (Y [(Y_WIDTH - 1):i*4]),
@@ -274,7 +265,6 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 			end else begin
 				CARRY4_COUT carry4_part
 				(
-				.CYINIT(1'd0),
 				.CI    (CO_CHAIN [i-1]),
 				.DI    (DI[(Y_WIDTH - 1):i*4]),
 				.S     (S [(Y_WIDTH - 1):i*4]),
@@ -291,7 +281,6 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 				CARRY4_COUT carry4_1st_full
 				(
 				.CYINIT(CI),
-				.CI    (1'd0),
 				.DI    (DI[((i+1)*4 - 1):i*4]),
 				.S     (S [((i+1)*4 - 1):i*4]),
 				.O     (Y [((i+1)*4 - 1):i*4]),
@@ -302,7 +291,6 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 			end else begin
 				CARRY4_COUT carry4_full
 				(
-				.CYINIT(1'd0),
 				.CI    (CO_CHAIN[i-1]),
 				.DI    (DI[((i+1)*4 - 1):i*4]),
 				.S     (S [((i+1)*4 - 1):i*4]),
