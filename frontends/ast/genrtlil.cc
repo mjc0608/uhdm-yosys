@@ -892,9 +892,30 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 	case AST_INTERFACEPORTTYPE:
 		break;
 
-	// remember the parameter, needed for example in techmap
-	case AST_PARAMETER:
-		current_module->avail_parameters.insert(str);
+	// create an RTLIL::Parameter for an AST_PARAMETER node
+	case AST_PARAMETER: {
+			current_module->avail_parameters.insert(str);  // FIXME: Remove this later
+
+			printf("AST_PARAMETER, '%s'\n", str.c_str());
+			if (children.size() > 0) {
+				for(size_t i=0; i<children.size();i++) {
+					printf(" %d '%s' %d\n", children[i]->type, children[i]->str.c_str(), children[i]->integer);
+				}
+			}
+
+			log_assert(children.size() == 1);
+
+			AstNode* child = children[0];
+			log_assert(child->type == AST_CONSTANT);
+
+			RTLIL::Parameter *param = current_module->addParameter(str, child->asAttrConst());
+
+			for (auto &attr : attributes) {
+				if (attr.second->type != AST_CONSTANT)
+					log_file_error(filename, linenum, "Attribute `%s' with non-constant value!\n", attr.first.c_str());
+				param->attributes[attr.first] = attr.second->asAttrConst();
+			}
+		}
 		break;
 
 	// create an RTLIL::Wire for an AST_WIRE node

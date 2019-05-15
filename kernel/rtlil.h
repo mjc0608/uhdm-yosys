@@ -59,6 +59,7 @@ namespace RTLIL
 	struct Monitor;
 	struct Design;
 	struct Module;
+	struct Parameter;
 	struct Wire;
 	struct Memory;
 	struct Cell;
@@ -968,9 +969,11 @@ public:
 	RTLIL::Design *design;
 	pool<RTLIL::Monitor*> monitors;
 
+	int refcount_parameters_;
 	int refcount_wires_;
 	int refcount_cells_;
 
+	dict<RTLIL::IdString, RTLIL::Parameter*> parameters_;
 	dict<RTLIL::IdString, RTLIL::Wire*> wires_;
 	dict<RTLIL::IdString, RTLIL::Cell*> cells_;
 	std::vector<RTLIL::SigSig> connections_;
@@ -1018,9 +1021,12 @@ public:
 		return design->selected_member(name, member->name);
 	}
 
+	const dict<RTLIL::IdString, RTLIL::Parameter*>& parameters () const { return parameters_; }
+
 	RTLIL::Wire* wire(RTLIL::IdString id) { return wires_.count(id) ? wires_.at(id) : nullptr; }
 	RTLIL::Cell* cell(RTLIL::IdString id) { return cells_.count(id) ? cells_.at(id) : nullptr; }
 
+	RTLIL::ObjRange<RTLIL::Parameter*> parameters() { return RTLIL::ObjRange<RTLIL::Parameter*>(&parameters_, &refcount_parameters_); }
 	RTLIL::ObjRange<RTLIL::Wire*> wires() { return RTLIL::ObjRange<RTLIL::Wire*>(&wires_, &refcount_wires_); }
 	RTLIL::ObjRange<RTLIL::Cell*> cells() { return RTLIL::ObjRange<RTLIL::Cell*>(&cells_, &refcount_cells_); }
 
@@ -1037,6 +1043,8 @@ public:
 
 	RTLIL::IdString uniquify(RTLIL::IdString name);
 	RTLIL::IdString uniquify(RTLIL::IdString name, int &index);
+
+	RTLIL::Parameter *addParameter(RTLIL::IdString name, RTLIL::Const defaultValue);
 
 	RTLIL::Wire *addWire(RTLIL::IdString name, int width = 1);
 	RTLIL::Wire *addWire(RTLIL::IdString name, const RTLIL::Wire *other);
@@ -1214,6 +1222,28 @@ public:
 #ifdef WITH_PYTHON
 	static std::map<unsigned int, RTLIL::Module*> *get_all_modules(void);
 #endif
+};
+
+struct RTLIL::Parameter : public RTLIL::AttrObject
+{
+	unsigned int hashidx_;
+	unsigned int hash() const { return hashidx_; }
+
+protected:
+	friend struct RTLIL::Module;
+	Parameter();
+	Parameter(RTLIL::Const defaultValue);
+
+	RTLIL::IdString	name;
+	RTLIL::Const	defaultValue;
+
+public:
+
+	RTLIL::Const getDefaultValue () const { return defaultValue; }
+
+//#ifdef WITH_PYTHON
+//	static std::map<unsigned int, RTLIL::Parameter*> *get_all_parameters(void);
+//#endif
 };
 
 struct RTLIL::Wire : public RTLIL::AttrObject
