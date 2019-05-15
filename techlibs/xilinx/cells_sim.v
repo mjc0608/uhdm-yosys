@@ -181,23 +181,14 @@ endmodule
 
 `ifdef _EXPLICIT_CARRY
 
-module CARRY0(output CO_CHAIN, CO_FABRIC, O, input CI, CI_INIT, DI, S);
-  parameter CYINIT_FABRIC = 0;
-  wire CI_COMBINE;
-  if(CYINIT_FABRIC) begin
-    assign CI_COMBINE = CI_INIT;
-  end else begin
-    assign CI_COMBINE = CI;
-  end
-  assign CO_CHAIN = S ? CI_COMBINE : DI;
-  assign CO_FABRIC = S ? CI_COMBINE : DI;
-  assign O = S ^ CI_COMBINE;
-endmodule
-
-module CARRY(output CO_CHAIN, CO_FABRIC, O, input CI, DI, S);
-  assign CO_CHAIN = S ? CI : DI;
-  assign CO_FABRIC = S ? CI : DI;
-  assign O = S ^ CI;
+module CARRY4_COUT(output [3:0] CO, O, output COUT, input CI, CYINIT, input [3:0] DI, S);
+  assign O = S ^ {CO[2:0], CI | CYINIT};
+  assign CO[0] = S[0] ? CI | CYINIT : DI[0];
+  assign CO[1] = S[1] ? CO[0] : DI[1];
+  assign CO[2] = S[2] ? CO[1] : DI[2];
+  wire CO_TOP  = S[3] ? CO[2] : DI[3];
+  assign CO[3] = CO_TOP;
+  assign COUT = CO_TOP;
 endmodule
 
 `endif
