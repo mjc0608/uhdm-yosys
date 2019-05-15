@@ -138,7 +138,7 @@ struct JsonWriter
 		f << stringf("\n      },\n");
 
 		f << stringf("      \"parameters\": {");
-		write_parameters(module->parameters(), /*for_module=*/true);
+		write_parameters(module->parameters_, /*for_module=*/true);
 		f << stringf("\n      },\n");
 
 		f << stringf("      \"ports\": {");

@@ -894,16 +894,10 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 
 	// create an RTLIL::Parameter for an AST_PARAMETER node
 	case AST_PARAMETER: {
-			current_module->avail_parameters.insert(str);  // FIXME: Remove this later
 
-			printf("AST_PARAMETER, '%s'\n", str.c_str());
-			if (children.size() > 0) {
-				for(size_t i=0; i<children.size();i++) {
-					printf(" %d '%s' %d\n", children[i]->type, children[i]->str.c_str(), children[i]->integer);
-				}
-			}
-
-			log_assert(children.size() == 1);
+			// It it assumed that there is at least 1 child and the first one is
+			// of type AST_CONSTANT. This is the default parameter value
+			log_assert(children.size() >= 1);
 
 			AstNode* child = children[0];
 			log_assert(child->type == AST_CONSTANT);
