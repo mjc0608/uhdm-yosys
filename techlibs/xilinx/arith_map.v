@@ -227,16 +227,25 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 
 `elsif _EXPLICIT_CARRY
 
-	localparam CARRY4_COUNT = (Y_WIDTH + 3) / 4;
+	// Turns out CO and O both use [ABCD]MUX, so provide a non-congested path
+	// to output the top of the carry chain is required.
+	//
+	// Registering the output of the CARRY block would solve this, but not
+	// all designs do that.
+	//
+	// To ensure that PAD_WIDTH > 0, add 1 to Y_WIDTH.
+	localparam Y_PAD_WIDTH  = Y_WIDTH + 1;
+	localparam CARRY4_COUNT = (Y_PAD_WIDTH + 3) / 4;
 	localparam MAX_WIDTH    = CARRY4_COUNT * 4;
 	localparam PAD_WIDTH    = MAX_WIDTH - Y_WIDTH;
 
+	wire [Y_PAD_WIDTH-1:0] O;
 	wire [MAX_WIDTH-1:0] S  = {{PAD_WIDTH{1'b0}}, AA ^ BB};
 	wire [MAX_WIDTH-1:0] DI = {{PAD_WIDTH{1'b0}}, AA & BB};
 
 	// Carry chain between CARRY4 blocks.
 	//
-	// VPR requires that the carry chain never hit the fabric.	The CO input
+	// VPR requires that the carry chain never hit the fabric. The CO input
 	// to this techmap is the carry outputs for synthesis, e.g. might hit the
 	// fabric.
 	//
@@ -244,32 +253,40 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 	// e.g. off fabric dedicated chain.  CO is the carry outputs that are
 	// available to the fabric.
 	wire [CARRY4_COUNT-1:0] CO_CHAIN;
+	wire [MAX_WIDTH-1:0] CO_FABRIC;
+
+	assign Y[Y_WIDTH-1:0] = O[Y_WIDTH-1:0];
+	assign CO[Y_WIDTH-2:0] = CO_FABRIC[Y_WIDTH-2:0];
+
+	// Use a dedicated CO pin (e.g. no O pin) to avoid [ABCD]MUX congestion
+	// for top of carry.
+	assign CO[Y_WIDTH-1] = CO_FABRIC[Y_WIDTH];
 
 	genvar i;
 	generate for (i = 0; i < CARRY4_COUNT; i = i + 1) begin:slice
 
 		// Partially occupied CARRY4
-		if ((i+1)*4 > Y_WIDTH) begin
+		if ((i+1)*4 > Y_PAD_WIDTH) begin
 
 			// First one
 			if (i == 0) begin
 				CARRY4_COUT carry4_1st_part
 				(
 				.CYINIT(CI),
-				.DI    (DI[(Y_WIDTH - 1):i*4]),
-				.S     (S [(Y_WIDTH - 1):i*4]),
-				.O     (Y [(Y_WIDTH - 1):i*4]),
-				.CO    (CO[(Y_WIDTH - 1):i*4]),
+				.DI    (DI[(Y_PAD_WIDTH - 1):i*4]),
+				.S     (S [(Y_PAD_WIDTH - 1):i*4]),
+				.O     (O [(Y_PAD_WIDTH - 1):i*4]),
+				.CO    (CO_FABRIC[(Y_PAD_WIDTH - 1):i*4]),
 				);
 			// Another one
 			end else begin
 				CARRY4_COUT carry4_part
 				(
 				.CI    (CO_CHAIN [i-1]),
-				.DI    (DI[(Y_WIDTH - 1):i*4]),
-				.S     (S [(Y_WIDTH - 1):i*4]),
-				.O     (Y [(Y_WIDTH - 1):i*4]),
-				.CO    (CO[(Y_WIDTH - 1):i*4])
+				.DI    (DI[(Y_PAD_WIDTH - 1):i*4]),
+				.S     (S [(Y_PAD_WIDTH - 1):i*4]),
+				.O     (O [(Y_PAD_WIDTH - 1):i*4]),
+				.CO    (CO_FABRIC[(Y_PAD_WIDTH - 1):i*4])
 				);
 			end
 
@@ -283,8 +300,8 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 				.CYINIT(CI),
 				.DI    (DI[((i+1)*4 - 1):i*4]),
 				.S     (S [((i+1)*4 - 1):i*4]),
-				.O     (Y [((i+1)*4 - 1):i*4]),
-				.CO    (CO[((i+1)*4 - 1):i*4]),
+				.O     (O [((i+1)*4 - 1):i*4]),
+				.CO    (CO_FABRIC[((i+1)*4 - 1):i*4]),
 				.COUT(CO_CHAIN[i])
 				);
 			// Another one
@@ -294,8 +311,8 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 				.CI    (CO_CHAIN[i-1]),
 				.DI    (DI[((i+1)*4 - 1):i*4]),
 				.S     (S [((i+1)*4 - 1):i*4]),
-				.O     (Y [((i+1)*4 - 1):i*4]),
-				.CO    (CO[((i+1)*4 - 1):i*4]),
+				.O     (O [((i+1)*4 - 1):i*4]),
+				.CO    (CO_FABRIC[((i+1)*4 - 1):i*4]),
 				.COUT(CO_CHAIN[i])
 				);
 			end
