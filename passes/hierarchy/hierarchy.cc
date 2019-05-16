@@ -346,9 +346,9 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 		}
 		RTLIL::Module *mod = design->modules_[cell->type];
 
-		if (design->modules_.at(cell->type)->get_bool_attribute("\\blackbox")) {
+		if (design->modules_.at(cell->type)->get_blackbox_attribute()) {
 			if (flag_simcheck)
-				log_error("Module `%s' referenced in module `%s' in cell `%s' is a blackbox module.\n",
+				log_error("Module `%s' referenced in module `%s' in cell `%s' is a blackbox/whitebox module.\n",
 						cell->type.c_str(), module->name.c_str(), cell->name.c_str());
 			continue;
 		}
@@ -451,7 +451,7 @@ void hierarchy_worker(RTLIL::Design *design, std::set<RTLIL::Module*, IdString::
 
 	if (indent == 0)
 		log("Top module:  %s\n", mod->name.c_str());
-	else if (!mod->get_bool_attribute("\\blackbox"))
+	else if (!mod->get_blackbox_attribute())
 		log("Used module: %*s%s\n", indent, "", mod->name.c_str());
 	used.insert(mod);
 
@@ -491,7 +491,7 @@ void hierarchy_clean(RTLIL::Design *design, RTLIL::Module *top, bool purge_lib)
 
 	int del_counter = 0;
 	for (auto mod : del_modules) {
-		if (!purge_lib && mod->get_bool_attribute("\\blackbox"))
+		if (!purge_lib && mod->get_blackbox_attribute())
 			continue;
 		log("Removing unused module `%s'.\n", mod->name.c_str());
 		design->modules_.erase(mod->name);
@@ -570,7 +570,7 @@ struct HierarchyPass : public Pass {
 		log("\n");
 		log("    -simcheck\n");
 		log("        like -check, but also throw an error if blackbox modules are\n");
-		log("        instantiated, and throw an error if the design has no top module\n");
+		log("        instantiated, and throw an error if the design has no top module.\n");
 		log("\n");
 		log("    -purge_lib\n");
 		log("        by default the hierarchy command will not remove library (blackbox)\n");
@@ -583,20 +583,20 @@ struct HierarchyPass : public Pass {
 		log("\n");
 		log("    -keep_positionals\n");
 		log("        per default this pass also converts positional arguments in cells\n");
-		log("        to arguments using port names. this option disables this behavior.\n");
+		log("        to arguments using port names. This option disables this behavior.\n");
 		log("\n");
 		log("    -keep_portwidths\n");
 		log("        per default this pass adjusts the port width on cells that are\n");
-		log("        module instances when the width does not match the module port. this\n");
+		log("        module instances when the width does not match the module port. This\n");
 		log("        option disables this behavior.\n");
 		log("\n");
 		log("    -nokeep_asserts\n");
 		log("        per default this pass sets the \"keep\" attribute on all modules\n");
-		log("        that directly or indirectly contain one or more $assert cells. this\n");
-		log("        option disables this behavior.\n");
+		log("        that directly or indirectly contain one or more formal properties.\n");
+		log("        This option disables this behavior.\n");
 		log("\n");
 		log("    -top <module>\n");
-		log("        use the specified top module to built a design hierarchy. modules\n");
+		log("        use the specified top module to build the design hierarchy. Modules\n");
 		log("        outside this tree (unused modules) are removed.\n");
 		log("\n");
 		log("        when the -top option is used, the 'top' attribute will be set on the\n");
@@ -605,6 +605,12 @@ struct HierarchyPass : public Pass {
 		log("\n");
 		log("    -auto-top\n");
 		log("        automatically determine the top of the design hierarchy and mark it.\n");
+		log("\n");
+		log("    -chparam name value \n");
+		log("       elaborate the top module using this parameter value. Modules on which\n");
+		log("       this parameter does not exist may cause a warning message to be output.\n");
+		log("       This option can be specified multiple times to override multiple\n");
+		log("       parameters. String values must be passed in double quotes (\").\n");
 		log("\n");
 		log("In -generate mode this pass generates blackbox modules for the given cell\n");
 		log("types (wildcards supported). For this the design is searched for cells that\n");
@@ -641,6 +647,7 @@ struct HierarchyPass : public Pass {
 		bool nokeep_asserts = false;
 		std::vector<std::string> generate_cells;
 		std::vector<generate_port_decl_t> generate_ports;
+		std::map<std::string, std::string> parameters;
 
 		size_t argidx;
 		for (argidx = 1; argidx < args.size(); argidx++)
@@ -715,28 +722,61 @@ struct HierarchyPass : public Pass {
 			if (args[argidx] == "-top") {
 				if (++argidx >= args.size())
 					log_cmd_error("Option -top requires an additional argument!\n");
-				top_mod = design->modules_.count(RTLIL::escape_id(args[argidx])) ? design->modules_.at(RTLIL::escape_id(args[argidx])) : NULL;
-				if (top_mod == NULL && design->modules_.count("$abstract" + RTLIL::escape_id(args[argidx]))) {
-					dict<RTLIL::IdString, RTLIL::Const> empty_parameters;
-					design->modules_.at("$abstract" + RTLIL::escape_id(args[argidx]))->derive(design, empty_parameters);
-					top_mod = design->modules_.count(RTLIL::escape_id(args[argidx])) ? design->modules_.at(RTLIL::escape_id(args[argidx])) : NULL;
-				}
-				if (top_mod == NULL)
-					load_top_mod = args[argidx];
+				load_top_mod = args[argidx];
 				continue;
 			}
 			if (args[argidx] == "-auto-top") {
 				auto_top_mode = true;
 				continue;
 			}
+			if (args[argidx] == "-chparam"  && argidx+2 < args.size()) {
+				const std::string &key = args[++argidx];
+				const std::string &value = args[++argidx];
+				auto r = parameters.emplace(key, value);
+				if (!r.second) {
+					log_warning("-chparam %s already specified: overwriting.\n", key.c_str());
+					r.first->second = value;
+				}
+				continue;
+			}
 			break;
 		}
 		extra_args(args, argidx, design, false);
 
-		if (!load_top_mod.empty()) {
+		if (!load_top_mod.empty())
+		{
+			IdString top_name = RTLIL::escape_id(load_top_mod);
+			IdString abstract_id = "$abstract" + RTLIL::escape_id(load_top_mod);
+			top_mod = design->module(top_name);
+
+			dict<RTLIL::IdString, RTLIL::Const> top_parameters;
+			for (auto &para : parameters) {
+				SigSpec sig_value;
+				if (!RTLIL::SigSpec::parse(sig_value, NULL, para.second))
+					log_cmd_error("Can't decode value '%s'!\n", para.second.c_str());
+				top_parameters[RTLIL::escape_id(para.first)] = sig_value.as_const();
+			}
+
+			if (top_mod == nullptr && design->module(abstract_id))
+				top_mod = design->module(design->module(abstract_id)->derive(design, top_parameters));
+			else if (top_mod != nullptr && !top_parameters.empty())
+				top_mod = design->module(top_mod->derive(design, top_parameters));
+
+			if (top_mod != nullptr && top_mod->name != top_name) {
+				Module *m = top_mod->clone();
+				m->name = top_name;
+				Module *old_mod = design->module(top_name);
+				if (old_mod)
+					design->remove(old_mod);
+				design->add(m);
+				top_mod = m;
+			}
+		}
+
+		if (top_mod == nullptr && !load_top_mod.empty()) {
 #ifdef YOSYS_ENABLE_VERIFIC
 			if (verific_import_pending) {
-				verific_import(design, load_top_mod);
+				verific_import(design, parameters, load_top_mod);
 				top_mod = design->module(RTLIL::escape_id(load_top_mod));
 			}
 #endif
@@ -745,7 +785,7 @@ struct HierarchyPass : public Pass {
 		} else {
 #ifdef YOSYS_ENABLE_VERIFIC
 			if (verific_import_pending)
-				verific_import(design);
+				verific_import(design, parameters);
 #endif
 		}
 
@@ -846,7 +886,7 @@ struct HierarchyPass : public Pass {
 			std::map<RTLIL::Module*, bool> cache;
 			for (auto mod : design->modules())
 				if (set_keep_assert(cache, mod)) {
-					log("Module %s directly or indirectly contains $assert cells -> setting \"keep\" attribute.\n", log_id(mod));
+					log("Module %s directly or indirectly contains formal properties -> setting \"keep\" attribute.\n", log_id(mod));
 					mod->set_bool_attribute("\\keep");
 				}
 		}
@@ -910,7 +950,7 @@ struct HierarchyPass : public Pass {
 			if (m == nullptr)
 				continue;
 
-			if (m->get_bool_attribute("\\blackbox") && !cell->parameters.empty() && m->get_bool_attribute("\\dynports")) {
+			if (m->get_blackbox_attribute() && !cell->parameters.empty() && m->get_bool_attribute("\\dynports")) {
 				IdString new_m_name = m->derive(design, cell->parameters, true);
 				if (new_m_name.empty())
 					continue;

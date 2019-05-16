@@ -28,13 +28,13 @@
 USING_YOSYS_NAMESPACE
 PRIVATE_NAMESPACE_BEGIN
 
-void proc_rmdead(RTLIL::SwitchRule *sw, int &counter)
+void proc_rmdead(RTLIL::SwitchRule *sw, int &counter, int &full_case_counter)
 {
 	BitPatternPool pool(sw->signal);
 
 	for (size_t i = 0; i < sw->cases.size(); i++)
 	{
-		bool is_default = GetSize(sw->cases[i]->compare) == 0 || GetSize(sw->signal) == 0;
+		bool is_default = GetSize(sw->cases[i]->compare) == 0 && (!pool.empty() || GetSize(sw->signal) == 0);
 
 		for (size_t j = 0; j < sw->cases[i]->compare.size(); j++) {
 			RTLIL::SigSpec sig = sw->cases[i]->compare[j];
@@ -56,10 +56,15 @@ void proc_rmdead(RTLIL::SwitchRule *sw, int &counter)
 		}
 
 		for (auto switch_it : sw->cases[i]->switches)
-			proc_rmdead(switch_it, counter);
+			proc_rmdead(switch_it, counter, full_case_counter);
 
 		if (is_default)
 			pool.take_all();
+	}
+
+	if (pool.empty() && !sw->get_bool_attribute("\\full_case")) {
+		sw->set_bool_attribute("\\full_case");
+		full_case_counter++;
 	}
 }
 
@@ -87,12 +92,15 @@ struct ProcRmdeadPass : public Pass {
 			for (auto &proc_it : mod->processes) {
 				if (!design->selected(mod, proc_it.second))
 					continue;
-				int counter = 0;
+				int counter = 0, full_case_counter = 0;
 				for (auto switch_it : proc_it.second->root_case.switches)
-					proc_rmdead(switch_it, counter);
+					proc_rmdead(switch_it, counter, full_case_counter);
 				if (counter > 0)
 					log("Removed %d dead cases from process %s in module %s.\n", counter,
-							proc_it.first.c_str(), log_id(mod));
+							log_id(proc_it.first), log_id(mod));
+				if (full_case_counter > 0)
+					log("Marked %d switch rules as full_case in process %s in module %s.\n",
+							full_case_counter, log_id(proc_it.first), log_id(mod));
 				total_counter += counter;
 			}
 		}
