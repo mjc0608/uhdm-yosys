@@ -147,7 +147,7 @@ module_stmt:
 
 param_stmt:
 	TOK_PARAMETER TOK_ID EOL {
-		current_module->addParameter($2, 0);  // FIXME: Default value ?
+		current_module->avail_parameters.insert($2);
 		free($2);
 	};
 

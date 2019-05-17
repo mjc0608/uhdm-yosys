@@ -606,7 +606,7 @@ struct TechmapWorker
 							continue;
 						if (tpl->wires_.count(conn.first) > 0 && tpl->wires_.at(conn.first)->port_id > 0)
 							continue;
-						if (!conn.second.is_fully_const() || parameters.count(conn.first) > 0 || tpl->parameters_.count(conn.first) == 0)
+						if (!conn.second.is_fully_const() || parameters.count(conn.first) > 0 || tpl->avail_parameters.count(conn.first) == 0)
 							goto next_tpl;
 						parameters[conn.first] = conn.second.as_const();
 					}
@@ -616,17 +616,17 @@ struct TechmapWorker
 						continue;
 					}
 
-					if (tpl->parameters_.count("\\_TECHMAP_CELLTYPE_") != 0)
+					if (tpl->avail_parameters.count("\\_TECHMAP_CELLTYPE_") != 0)
 						parameters["\\_TECHMAP_CELLTYPE_"] = RTLIL::unescape_id(cell->type);
 
 					for (auto conn : cell->connections()) {
-						if (tpl->parameters_.count(stringf("\\_TECHMAP_CONSTMSK_%s_", RTLIL::id2cstr(conn.first))) != 0) {
+						if (tpl->avail_parameters.count(stringf("\\_TECHMAP_CONSTMSK_%s_", RTLIL::id2cstr(conn.first))) != 0) {
 							std::vector<RTLIL::SigBit> v = sigmap(conn.second).to_sigbit_vector();
 							for (auto &bit : v)
 								bit = RTLIL::SigBit(bit.wire == NULL ? RTLIL::State::S1 : RTLIL::State::S0);
 							parameters[stringf("\\_TECHMAP_CONSTMSK_%s_", RTLIL::id2cstr(conn.first))] = RTLIL::SigSpec(v).as_const();
 						}
-						if (tpl->parameters_.count(stringf("\\_TECHMAP_CONSTVAL_%s_", RTLIL::id2cstr(conn.first))) != 0) {
+						if (tpl->avail_parameters.count(stringf("\\_TECHMAP_CONSTVAL_%s_", RTLIL::id2cstr(conn.first))) != 0) {
 							std::vector<RTLIL::SigBit> v = sigmap(conn.second).to_sigbit_vector();
 							for (auto &bit : v)
 								if (bit.wire != NULL)
@@ -643,7 +643,7 @@ struct TechmapWorker
 					unique_bit_id[RTLIL::State::Sz] = unique_bit_id_counter++;
 
 					for (auto conn : cell->connections())
-						if (tpl->parameters_.count(stringf("\\_TECHMAP_CONNMAP_%s_", RTLIL::id2cstr(conn.first))) != 0) {
+						if (tpl->avail_parameters.count(stringf("\\_TECHMAP_CONNMAP_%s_", RTLIL::id2cstr(conn.first))) != 0) {
 							for (auto &bit : sigmap(conn.second).to_sigbit_vector())
 								if (unique_bit_id.count(bit) == 0)
 									unique_bit_id[bit] = unique_bit_id_counter++;
@@ -653,11 +653,11 @@ struct TechmapWorker
 					for (int i = 0; i < 32; i++)
 						if (((unique_bit_id_counter-1) & (1 << i)) != 0)
 							bits = i;
-					if (tpl->parameters_.count("\\_TECHMAP_BITS_CONNMAP_"))
+					if (tpl->avail_parameters.count("\\_TECHMAP_BITS_CONNMAP_"))
 						parameters["\\_TECHMAP_BITS_CONNMAP_"] = bits;
 
 					for (auto conn : cell->connections())
-						if (tpl->parameters_.count(stringf("\\_TECHMAP_CONNMAP_%s_", RTLIL::id2cstr(conn.first))) != 0) {
+						if (tpl->avail_parameters.count(stringf("\\_TECHMAP_CONNMAP_%s_", RTLIL::id2cstr(conn.first))) != 0) {
 							RTLIL::Const value;
 							for (auto &bit : sigmap(conn.second).to_sigbit_vector()) {
 								RTLIL::Const chunk(unique_bit_id.at(bit), bits);

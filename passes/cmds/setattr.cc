@@ -279,7 +279,7 @@ struct ChparamPass : public Pass {
 				log_cmd_error("The options -set and -list cannot be used together.\n");
 			for (auto module : design->selected_modules()) {
 				log("%s:\n", log_id(module));
-				for (auto param : module->availableParameters())
+				for (auto param : module->avail_parameters)
 					log("  %s\n", log_id(param));
 			}
 			return;

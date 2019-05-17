@@ -979,6 +979,7 @@ public:
 	std::vector<RTLIL::SigSig> connections_;
 
 	RTLIL::IdString name;
+	pool<RTLIL::IdString> avail_parameters;
 	dict<RTLIL::IdString, RTLIL::Memory*> memories;
 	dict<RTLIL::IdString, RTLIL::Process*> processes;
 
@@ -1021,7 +1022,6 @@ public:
 	}
 
 	const dict<RTLIL::IdString, RTLIL::Parameter*>& parameters () const { return parameters_; }
-	const pool<RTLIL::IdString> availableParameters () const;
 
 	RTLIL::Wire* wire(RTLIL::IdString id) { return wires_.count(id) ? wires_.at(id) : nullptr; }
 	RTLIL::Cell* cell(RTLIL::IdString id) { return cells_.count(id) ? cells_.at(id) : nullptr; }

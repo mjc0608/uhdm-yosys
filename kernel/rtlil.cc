@@ -687,17 +687,6 @@ std::map<unsigned int, RTLIL::Module*> *RTLIL::Module::get_all_modules(void)
 }
 #endif
 
-const pool<RTLIL::IdString> RTLIL::Module::availableParameters() const
-{
-	pool<RTLIL::IdString> params;
-
-	for (auto it : parameters_) {
-		params.insert(it.first);
-	}
-
-	return params;
-}
-
 void RTLIL::Module::makeblackbox()
 {
 	pool<RTLIL::Wire*> delwires;
@@ -1327,7 +1316,7 @@ void RTLIL::Module::sort()
 {
 	wires_.sort(sort_by_id_str());
 	cells_.sort(sort_by_id_str());
-	parameters_.sort(sort_by_id_str());
+	avail_parameters.sort(sort_by_id_str());
 	memories.sort(sort_by_id_str());
 	processes.sort(sort_by_id_str());
 	for (auto &it : cells_)
@@ -1418,14 +1407,13 @@ void RTLIL::Module::cloneInto(RTLIL::Module *new_mod) const
 	log_assert(new_mod->refcount_wires_ == 0);
 	log_assert(new_mod->refcount_cells_ == 0);
 
+	new_mod->avail_parameters = avail_parameters;
+
 	for (auto &conn : connections_)
 		new_mod->connect(conn);
 
 	for (auto &attr : attributes)
 		new_mod->attributes[attr.first] = attr.second;
-
-	for (auto &it : parameters_)
-		new_mod->addParameter(it.first, it.second->defaultValue);
 
 	for (auto &it : wires_)
 		new_mod->addWire(it.first, it.second);
