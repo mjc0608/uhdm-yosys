@@ -896,24 +896,25 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 	case AST_PARAMETER: {
 			current_module->avail_parameters.insert(str);
 
-			printf("AST_PARAMETER, '%s'\n", str.c_str());
-			if (children.size() > 0) {
-				for(size_t i=0; i<children.size();i++) {
-					printf(" %d '%s' %d\n", children[i]->type, children[i]->str.c_str(), children[i]->integer);
-				}
-			}
-
-			log_assert(children.size() == 1);
-
+			// Add parameter information
+			log_assert(children.size() >= 1);
 			AstNode* child = children[0];
 			log_assert(child->type == AST_CONSTANT);
 
-			RTLIL::Parameter *param = current_module->addParameter(str, child->asAttrConst());
+			RTLIL::ParameterInfo info (child->asAttrConst());
+			current_module->parameter_information.insert(std::pair<RTLIL::IdString, RTLIL::ParameterInfo>(str, info));
 
-			for (auto &attr : attributes) {
-				if (attr.second->type != AST_CONSTANT)
-					log_file_error(filename, linenum, "Attribute `%s' with non-constant value!\n", attr.first.c_str());
-				param->attributes[attr.first] = attr.second->asAttrConst();
+			// Add parameter attributes (if any)
+			if (!attributes.empty()) {
+				dict<RTLIL::IdString,RTLIL::Const> param_attrs;
+
+				for (auto &attr : attributes) {
+					if (attr.second->type != AST_CONSTANT)
+						log_file_error(filename, linenum, "Attribute `%s' with non-constant value!\n", attr.first.c_str());
+					param_attrs[attr.first] = attr.second->asAttrConst();
+				}
+
+				current_module->parameter_attributes[str] = param_attrs;
 			}
 		}
 		break;

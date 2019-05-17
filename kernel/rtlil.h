@@ -59,7 +59,7 @@ namespace RTLIL
 	struct Monitor;
 	struct Design;
 	struct Module;
-	struct Parameter;
+	struct ParameterInfo;
 	struct Wire;
 	struct Memory;
 	struct Cell;
@@ -973,13 +973,14 @@ public:
 	int refcount_wires_;
 	int refcount_cells_;
 
-	dict<RTLIL::IdString, RTLIL::Parameter*> parameters_;
 	dict<RTLIL::IdString, RTLIL::Wire*> wires_;
 	dict<RTLIL::IdString, RTLIL::Cell*> cells_;
 	std::vector<RTLIL::SigSig> connections_;
 
 	RTLIL::IdString name;
 	pool<RTLIL::IdString> avail_parameters;
+	dict<RTLIL::IdString, RTLIL::ParameterInfo> parameter_information;
+	dict<RTLIL::IdString, dict<RTLIL::IdString,RTLIL::Const>> parameter_attributes;
 	dict<RTLIL::IdString, RTLIL::Memory*> memories;
 	dict<RTLIL::IdString, RTLIL::Process*> processes;
 
@@ -1021,12 +1022,9 @@ public:
 		return design->selected_member(name, member->name);
 	}
 
-	const dict<RTLIL::IdString, RTLIL::Parameter*>& parameters () const { return parameters_; }
-
 	RTLIL::Wire* wire(RTLIL::IdString id) { return wires_.count(id) ? wires_.at(id) : nullptr; }
 	RTLIL::Cell* cell(RTLIL::IdString id) { return cells_.count(id) ? cells_.at(id) : nullptr; }
 
-	RTLIL::ObjRange<RTLIL::Parameter*> parameters() { return RTLIL::ObjRange<RTLIL::Parameter*>(&parameters_, &refcount_parameters_); }
 	RTLIL::ObjRange<RTLIL::Wire*> wires() { return RTLIL::ObjRange<RTLIL::Wire*>(&wires_, &refcount_wires_); }
 	RTLIL::ObjRange<RTLIL::Cell*> cells() { return RTLIL::ObjRange<RTLIL::Cell*>(&cells_, &refcount_cells_); }
 
@@ -1043,8 +1041,6 @@ public:
 
 	RTLIL::IdString uniquify(RTLIL::IdString name);
 	RTLIL::IdString uniquify(RTLIL::IdString name, int &index);
-
-	RTLIL::Parameter *addParameter(RTLIL::IdString name, RTLIL::Const defaultValue);
 
 	RTLIL::Wire *addWire(RTLIL::IdString name, int width = 1);
 	RTLIL::Wire *addWire(RTLIL::IdString name, const RTLIL::Wire *other);
@@ -1224,25 +1220,14 @@ public:
 #endif
 };
 
-struct RTLIL::Parameter : public RTLIL::AttrObject
+struct RTLIL::ParameterInfo
 {
-	unsigned int hashidx_;
-	unsigned int hash() const { return hashidx_; }
-
-protected:
-	friend struct RTLIL::Module;
-	Parameter();
-	Parameter(RTLIL::Const defaultValue);
-
-	RTLIL::IdString	name;
 	RTLIL::Const	defaultValue;
 
-public:
-
-	RTLIL::Const getDefaultValue () const { return defaultValue; }
+	ParameterInfo (RTLIL::Const def) : defaultValue(def) {}
 
 //#ifdef WITH_PYTHON
-//	static std::map<unsigned int, RTLIL::Parameter*> *get_all_parameters(void);
+//	static std::map<unsigned int, RTLIL::ParameterInfo*> *get_all_parameter_infos(void);
 //#endif
 };
 

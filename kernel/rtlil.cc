@@ -664,8 +664,6 @@ RTLIL::Module::Module()
 
 RTLIL::Module::~Module()
 {
-	for (auto it = parameters_.begin(); it != parameters_.end(); ++it)
-		delete it->second;
 	for (auto it = wires_.begin(); it != wires_.end(); ++it)
 		delete it->second;
 	for (auto it = memories.begin(); it != memories.end(); ++it)
@@ -1409,6 +1407,17 @@ void RTLIL::Module::cloneInto(RTLIL::Module *new_mod) const
 
 	new_mod->avail_parameters = avail_parameters;
 
+	for (auto &info : parameter_information)
+		new_mod->parameter_information.insert(info);
+
+	for (auto &attrs : parameter_attributes)
+	{
+		dict<RTLIL::IdString,RTLIL::Const> attrs_copy;
+		for (auto &attr : attrs.second)
+			attrs_copy[attr.first] = attr.second;
+		new_mod->parameter_attributes[attrs.first] = attrs_copy;
+	}
+
 	for (auto &conn : connections_)
 		new_mod->connect(conn);
 
@@ -1746,17 +1755,6 @@ void RTLIL::Module::fixup_ports()
 		ports.push_back(all_ports[i]->name);
 		all_ports[i]->port_id = i+1;
 	}
-}
-
-RTLIL::Parameter* RTLIL::Module::addParameter(RTLIL::IdString name, RTLIL::Const defaultValue)
-{
-	RTLIL::Parameter *parameter = new RTLIL::Parameter;
-	parameter->name = name;
-	parameter->defaultValue = defaultValue;
-
-	parameters_[parameter->name] = parameter;
-
-	return parameter;
 }
 
 RTLIL::Wire *RTLIL::Module::addWire(RTLIL::IdString name, int width)
@@ -2358,22 +2356,6 @@ std::map<unsigned int, RTLIL::Wire*> *RTLIL::Wire::get_all_wires(void)
 	return &all_wires;
 }
 #endif
-
-RTLIL::Parameter::Parameter()
-{
-	static unsigned int hashidx_count = 123456789;
-	hashidx_count = mkhash_xorshift(hashidx_count);
-	hashidx_ = hashidx_count;
-}
-
-//RTLIL::Parameter::Parameter(const RTLIL::Const &defaultValue) :
-//	def
-//
-//{
-//	static unsigned int hashidx_count = 123456789;
-//	hashidx_count = mkhash_xorshift(hashidx_count);
-//	hashidx_ = hashidx_count;
-//}
 
 RTLIL::Memory::Memory()
 {
