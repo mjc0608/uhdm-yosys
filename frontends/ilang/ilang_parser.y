@@ -148,6 +148,16 @@ module_stmt:
 param_stmt:
 	TOK_PARAMETER TOK_ID EOL {
 		current_module->avail_parameters.insert($2);
+
+		// Assume that a parameter has default value of 0
+		current_module->parameter_information.insert(std::pair<RTLIL::IdString,RTLIL::ParameterInfo>($2, 0));
+		
+		// Append attributes
+		if (!attrbuf.empty()) {
+			current_module->parameter_attributes[$2] = attrbuf;
+			attrbuf.clear();
+		}
+		
 		free($2);
 	};
 
