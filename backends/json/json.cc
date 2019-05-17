@@ -101,28 +101,29 @@ struct JsonWriter
 		}
 	}
 
-	void write_parameters(const dict<RTLIL::IdString, RTLIL::Parameter*> &parameters)
+	void write_module_parameters(const Module* module)
 	{
 		bool first = true;
-		for (auto &it : parameters) {
-			RTLIL::Parameter* param = it.second;
-			RTLIL::Const value = param->getDefaultValue();
+		for (auto &param : module->avail_parameters) {
 			f << stringf("%s\n", first ? "" : ",");
-			f << stringf("        %s: {\n", get_name(it.first).c_str());
+			f << stringf("        %s: {\n", get_name(param).c_str());
 
 			f << stringf("          \"attributes\": {");
-			write_attributes(param->attributes);
+			if (module->parameter_attributes.count(param))
+				write_attributes(module->parameter_attributes.at(param));
 			f << stringf("\n          },\n");
 
+			const RTLIL::ParameterInfo& info = module->parameter_information.at(param);
+
 			f << stringf("          \"default\": ");
-			if ((value.flags & RTLIL::ConstFlags::CONST_FLAG_STRING) != 0)
-				f << get_string(value.decode_string());
-			else if (GetSize(value.bits) > 32)
-				f << get_string(value.as_string());
-			else if ((value.flags & RTLIL::ConstFlags::CONST_FLAG_SIGNED) != 0)
-				f << stringf("%d", value.as_int());
+			if ((info.defaultValue.flags & RTLIL::ConstFlags::CONST_FLAG_STRING) != 0)
+				f << get_string(info.defaultValue.decode_string());
+			else if (GetSize(info.defaultValue.bits) > 32)
+				f << get_string(info.defaultValue.as_string());
+			else if ((info.defaultValue.flags & RTLIL::ConstFlags::CONST_FLAG_SIGNED) != 0)
+				f << stringf("%d", info.defaultValue.as_int());
 			else
-				f << stringf("%u", value.as_int());
+				f << stringf("%u", info.defaultValue.as_int());
 			f << stringf("\n");
 
 			f << stringf("        }");
@@ -147,7 +148,7 @@ struct JsonWriter
 		f << stringf("\n      },\n");
 
 		f << stringf("      \"parameters\": {");
-		write_parameters(module->parameters_);
+		write_module_parameters(module);
 		f << stringf("\n      },\n");
 
 		f << stringf("      \"ports\": {");
