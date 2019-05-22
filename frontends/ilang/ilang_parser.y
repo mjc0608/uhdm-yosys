@@ -150,7 +150,12 @@ param_stmt:
 		current_module->avail_parameters.insert($2);
 
 		// Assume that a parameter has default value of 0
-		RTLIL::ParameterInfo info(0);
+		RTLIL::ParameterInfo info;
+		info.defaultValue = 0;
+#ifdef WITH_PYTHON		
+		info.name = $2;
+#endif
+
 		current_module->parameter_information.insert(std::pair<RTLIL::IdString,RTLIL::ParameterInfo>($2, info));
 		
 		// Append attributes

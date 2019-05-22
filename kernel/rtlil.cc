@@ -2323,6 +2323,32 @@ RTLIL::SigSpec RTLIL::Module::Initstate(RTLIL::IdString name, const std::string 
 	return sig;
 }
 
+RTLIL::ParameterInfo::ParameterInfo()
+{
+	static unsigned int hashidx_count = 123456789;
+	hashidx_count = mkhash_xorshift(hashidx_count);
+	hashidx_ = hashidx_count;
+
+#ifdef WITH_PYTHON
+	RTLIL::ParameterInfo::get_all_parameterinfos()->insert(std::pair<unsigned int, RTLIL::ParameterInfo*>(hashidx_, this));
+#endif
+}
+
+RTLIL::ParameterInfo::~ParameterInfo()
+{
+#ifdef WITH_PYTHON
+	RTLIL::ParameterInfo::get_all_parameterinfos()->erase(hashidx_);
+#endif
+}
+
+#ifdef WITH_PYTHON
+static std::map<unsigned int, RTLIL::ParameterInfo*> all_parameter_infos;
+std::map<unsigned int, RTLIL::ParameterInfo*> *RTLIL::ParameterInfo::get_all_parameterinfos(void)
+{
+	return &all_parameter_infos;
+}
+#endif
+
 RTLIL::Wire::Wire()
 {
 	static unsigned int hashidx_count = 123456789;

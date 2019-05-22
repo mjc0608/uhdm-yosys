@@ -1222,13 +1222,20 @@ public:
 
 struct RTLIL::ParameterInfo
 {
+	unsigned int hashidx_;
+	unsigned int hash() const { return hashidx_; }
+
+	ParameterInfo ();
+	~ParameterInfo ();
+
+#ifdef WITH_PYTHON
+	RTLIL::IdString name;
+#endif
 	RTLIL::Const	defaultValue;
 
-	ParameterInfo (RTLIL::Const def) : defaultValue(def) {}
-
-//#ifdef WITH_PYTHON
-//	static std::map<unsigned int, RTLIL::ParameterInfo*> *get_all_parameter_infos(void);
-//#endif
+#ifdef WITH_PYTHON
+	static std::map<unsigned int, RTLIL::ParameterInfo*> *get_all_parameterinfos(void);
+#endif
 };
 
 struct RTLIL::Wire : public RTLIL::AttrObject

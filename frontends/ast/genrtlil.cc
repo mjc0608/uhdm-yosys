@@ -901,7 +901,11 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 			AstNode* child = children[0];
 			log_assert(child->type == AST_CONSTANT);
 
-			RTLIL::ParameterInfo info (child->asAttrConst());
+			RTLIL::ParameterInfo info;
+			info.defaultValue = child->asAttrConst();
+#ifdef WITH_PYTHON
+			info.name = str;
+#endif
 			current_module->parameter_information.insert(std::pair<RTLIL::IdString, RTLIL::ParameterInfo>(str, info));
 
 			// Add parameter attributes (if any)
