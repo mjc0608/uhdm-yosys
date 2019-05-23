@@ -1608,13 +1608,7 @@ void dump_process(std::ostream &f, std::string indent, RTLIL::Process *proc, boo
 void dump_parameters(std::ostream &f, std::string indent, RTLIL::Module *module)
 {
 	for (auto& param : module->avail_parameters) {
-
-		// Skip the parameter if its name begins with '$'. Such names are illegal
-		// in Verilog.
-		if (param.str().find("$") == 0) {
-			log_warning("Skipping parameter '%s' due to its '$' prefix", param.c_str());
-			continue;
-		}
+		std::string paramName;
 
 		RTLIL::ParameterInfo& info = module->parameter_information.at(param);
 
@@ -1622,7 +1616,15 @@ void dump_parameters(std::ostream &f, std::string indent, RTLIL::Module *module)
 			dump_attributes(f, indent, module->parameter_attributes.at(param), '\n');
 		}
 
-		f << stringf("%s" "parameter %s = ", indent.c_str(), param.c_str());
+		// Prefix the parameter name if needed
+		if (param.str().find("$") == 0) {
+			paramName = std::string("\\") + std::string(param.c_str());
+		}
+		else {
+			paramName = std::string(param.c_str());
+		}
+
+		f << stringf("%s" "parameter %s = ", indent.c_str(), paramName.c_str());
 		dump_const(f, info.defaultValue);
 		f << stringf(";\n");
 	}
