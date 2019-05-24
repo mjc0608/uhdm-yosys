@@ -116,14 +116,20 @@ struct JsonWriter
 			const RTLIL::ParameterInfo& info = module->parameter_information.at(param);
 
 			f << stringf("          \"default\": ");
-			if ((info.defaultValue.flags & RTLIL::ConstFlags::CONST_FLAG_STRING) != 0)
-				f << get_string(info.defaultValue.decode_string());
-			else if (GetSize(info.defaultValue.bits) > 32)
-				f << get_string(info.defaultValue.as_string());
-			else if ((info.defaultValue.flags & RTLIL::ConstFlags::CONST_FLAG_SIGNED) != 0)
-				f << stringf("%d", info.defaultValue.as_int());
-			else
-				f << stringf("%u", info.defaultValue.as_int());
+
+			if (info.isReal) {
+				f << stringf("%f", info.defaultValueReal);
+			}
+			else {
+				if ((info.defaultValue.flags & RTLIL::ConstFlags::CONST_FLAG_STRING) != 0)
+					f << get_string(info.defaultValue.decode_string());
+				else if (GetSize(info.defaultValue.bits) > 32)
+					f << get_string(info.defaultValue.as_string());
+				else if ((info.defaultValue.flags & RTLIL::ConstFlags::CONST_FLAG_SIGNED) != 0)
+					f << stringf("%d", info.defaultValue.as_int());
+				else
+					f << stringf("%u", info.defaultValue.as_int());
+			}
 			f << stringf("\n");
 
 			f << stringf("        }");
