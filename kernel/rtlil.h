@@ -1231,7 +1231,10 @@ struct RTLIL::ParameterInfo
 #ifdef WITH_PYTHON
 	RTLIL::IdString name;
 #endif
-	RTLIL::Const	defaultValue;
+	RTLIL::Const	defaultValue = 0;
+
+	double			defaultValueReal = 0.0;
+	bool			isReal = false;
 
 #ifdef WITH_PYTHON
 	static std::map<unsigned int, RTLIL::ParameterInfo*> *get_all_parameterinfos(void);

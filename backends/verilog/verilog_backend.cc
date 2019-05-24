@@ -1625,7 +1625,12 @@ void dump_parameters(std::ostream &f, std::string indent, RTLIL::Module *module)
 		}
 
 		f << stringf("%s" "parameter %s = ", indent.c_str(), paramName.c_str());
-		dump_const(f, info.defaultValue);
+		if (info.isReal) {
+			f << stringf("%f", info.defaultValueReal);
+		}
+		else {
+			dump_const(f, info.defaultValue);
+		}
 		f << stringf(";\n");
 	}
 }

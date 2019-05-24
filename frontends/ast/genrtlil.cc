@@ -898,11 +898,20 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 
 			// Add parameter information
 			log_assert(children.size() >= 1);
+
 			AstNode* child = children[0];
-			log_assert(child->type == AST_CONSTANT);
+			log_assert(child->type == AST_CONSTANT || child->type == AST_REALVALUE);
 
 			RTLIL::ParameterInfo info;
-			info.defaultValue = child->asAttrConst();
+
+			if (child->type == AST_CONSTANT) {
+				info.defaultValue = child->asAttrConst();
+			}
+			else {
+				info.defaultValueReal = child->realvalue;
+				info.isReal = true;
+			}
+
 #ifdef WITH_PYTHON
 			info.name = str;
 #endif
