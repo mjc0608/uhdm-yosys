@@ -892,9 +892,44 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 	case AST_INTERFACEPORTTYPE:
 		break;
 
-	// remember the parameter, needed for example in techmap
-	case AST_PARAMETER:
-		current_module->avail_parameters.insert(str);
+	// create an RTLIL::Parameter for an AST_PARAMETER node
+	case AST_PARAMETER: {
+			current_module->avail_parameters.insert(str);
+
+			// Add parameter information
+			log_assert(children.size() >= 1);
+
+			AstNode* child = children[0];
+			log_assert(child->type == AST_CONSTANT || child->type == AST_REALVALUE);
+
+			RTLIL::ParameterInfo info;
+
+			if (child->type == AST_CONSTANT) {
+				info.defaultValue = child->asAttrConst();
+			}
+			else {
+				info.defaultValueReal = child->realvalue;
+				info.isReal = true;
+			}
+
+#ifdef WITH_PYTHON
+			info.name = str;
+#endif
+			current_module->parameter_information.insert(std::pair<RTLIL::IdString, RTLIL::ParameterInfo>(str, info));
+
+			// Add parameter attributes (if any)
+			if (!attributes.empty()) {
+				dict<RTLIL::IdString,RTLIL::Const> param_attrs;
+
+				for (auto &attr : attributes) {
+					if (attr.second->type != AST_CONSTANT)
+						log_file_error(filename, linenum, "Attribute `%s' with non-constant value!\n", attr.first.c_str());
+					param_attrs[attr.first] = attr.second->asAttrConst();
+				}
+
+				current_module->parameter_attributes[str] = param_attrs;
+			}
+		}
 		break;
 
 	// create an RTLIL::Wire for an AST_WIRE node
