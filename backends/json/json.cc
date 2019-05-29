@@ -137,6 +137,24 @@ struct JsonWriter
 		}
 	}
 
+	void write_connection_attributes(const dict<IdString, Const>& attributes)
+	{
+		bool first = true;
+		for (auto &attr : attributes) {
+			f << stringf("%s\n", first ? "" : ",");
+			f << stringf("                %s: ", get_name(attr.first).c_str());
+			if ((attr.second.flags & RTLIL::ConstFlags::CONST_FLAG_STRING) != 0)
+				f << get_string(attr.second.decode_string());
+			else if (GetSize(attr.second.bits) > 32)
+				f << get_string(attr.second.as_string());
+			else if ((attr.second.flags & RTLIL::ConstFlags::CONST_FLAG_SIGNED) != 0)
+				f << stringf("%d", attr.second.as_int());
+			else
+				f << stringf("%u", attr.second.as_int());
+			first = false;
+		}
+	}
+
 	void write_module(Module *module_)
 	{
 		module = module_;
@@ -211,7 +229,12 @@ struct JsonWriter
 			bool first2 = true;
 			for (auto &conn : c->connections()) {
 				f << stringf("%s\n", first2 ? "" : ",");
-				f << stringf("            %s: %s", get_name(conn.first).c_str(), get_bits(conn.second).c_str());
+				f << stringf("            %s: {\n", get_name(conn.first).c_str());
+				f << stringf("              \"bits\": %s,\n",  get_bits(conn.second).c_str());
+				f << stringf("              \"attributes\": {");
+				write_connection_attributes(conn.second.attributes);
+				f << stringf("\n            }\n");
+				f << stringf("            }");
 				first2 = false;
 			}
 			f << stringf("\n          }\n");
