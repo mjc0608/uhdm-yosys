@@ -168,6 +168,11 @@ void ILANG_BACKEND::dump_cell(std::ostream &f, std::string indent, const RTLIL::
 		f << stringf("\n");
 	}
 	for (auto &it : cell->connections()) {
+		for (auto &it2 : it.second.attributes) {
+			f << stringf("%s  attribute %s ", indent.c_str(), it2.first.c_str());
+			dump_const(f, it2.second);
+			f << stringf("\n");
+		}
 		f << stringf("%s  connect %s ", indent.c_str(), it.first.c_str());
 		dump_sigspec(f, it.second);
 		f << stringf("\n");
