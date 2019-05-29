@@ -345,8 +345,27 @@ void dump_sigchunk(std::ostream &f, const RTLIL::SigChunk &chunk, bool no_decima
 	}
 }
 
+void dump_attributes(std::ostream &f, std::string indent, const dict<RTLIL::IdString, RTLIL::Const> &attributes, char term = '\n', bool modattr = false)
+{
+	if (noattr)
+		return;
+	for (auto it = attributes.begin(); it != attributes.end(); ++it) {
+		f << stringf("%s" "%s %s", indent.c_str(), attr2comment ? "/*" : "(*", id(it->first).c_str());
+		f << stringf(" = ");
+		if (modattr && (it->second == Const(0, 1) || it->second == Const(0)))
+			f << stringf(" 0 ");
+		else if (modattr && (it->second == Const(1, 1) || it->second == Const(1)))
+			f << stringf(" 1 ");
+		else
+			dump_const(f, it->second, -1, 0, false, attr2comment);
+		f << stringf(" %s%c", attr2comment ? "*/" : "*)", term);
+	}
+}
+
 void dump_sigspec(std::ostream &f, const RTLIL::SigSpec &sig)
 {
+	dump_attributes(f, "", sig.attributes, ' ');
+
 	if (GetSize(sig) == 0) {
 		f << "\"\"";
 		return;
@@ -361,23 +380,6 @@ void dump_sigspec(std::ostream &f, const RTLIL::SigSpec &sig)
 			dump_sigchunk(f, *it, true);
 		}
 		f << stringf(" }");
-	}
-}
-
-void dump_attributes(std::ostream &f, std::string indent, dict<RTLIL::IdString, RTLIL::Const> &attributes, char term = '\n', bool modattr = false)
-{
-	if (noattr)
-		return;
-	for (auto it = attributes.begin(); it != attributes.end(); ++it) {
-		f << stringf("%s" "%s %s", indent.c_str(), attr2comment ? "/*" : "(*", id(it->first).c_str());
-		f << stringf(" = ");
-		if (modattr && (it->second == Const(0, 1) || it->second == Const(0)))
-			f << stringf(" 0 ");
-		else if (modattr && (it->second == Const(1, 1) || it->second == Const(1)))
-			f << stringf(" 1 ");
-		else
-			dump_const(f, it->second, -1, 0, false, attr2comment);
-		f << stringf(" %s%c", attr2comment ? "*/" : "*)", term);
 	}
 }
 
