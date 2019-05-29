@@ -258,9 +258,18 @@ module _80_xilinx_alu (A, B, CI, BI, X, Y, CO);
 	assign Y[Y_WIDTH-1:0] = O[Y_WIDTH-1:0];
 	assign CO[Y_WIDTH-2:0] = CO_FABRIC[Y_WIDTH-2:0];
 
-	// Use a dedicated CO pin (e.g. no O pin) to avoid [ABCD]MUX congestion
-	// for top of carry.
-	assign CO[Y_WIDTH-1] = CO_FABRIC[Y_WIDTH];
+	// Use a dedicated O pin (e.g. no other CARRY4 pin) to avoid [ABCD]MUX
+	// congestion for top of carry.
+	//
+	// Note:
+	//
+	//  O[N] = CO[N-1] ^ S[N]
+	//
+	// So given S[N] = 0:
+	//
+	//  O[N] = CO[N-1]
+	//
+	assign CO[Y_WIDTH-1] = O[Y_WIDTH];
 
 	genvar i;
 	generate for (i = 0; i < CARRY4_COUNT; i = i + 1) begin:slice
