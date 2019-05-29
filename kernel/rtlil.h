@@ -655,7 +655,7 @@ struct RTLIL::SigSpecConstIterator : public std::iterator<std::input_iterator_ta
 	inline void operator++() { index++; }
 };
 
-struct RTLIL::SigSpec
+struct RTLIL::SigSpec : public RTLIL::AttrObject
 {
 private:
 	int width_;

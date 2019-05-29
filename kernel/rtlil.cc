@@ -2795,6 +2795,8 @@ const RTLIL::SigSpec &RTLIL::SigSpec::operator=(const RTLIL::SigSpec &other)
 		check();
 	}
 
+	attributes = other.attributes;
+
 	return *this;
 }
 

@@ -1554,6 +1554,11 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 					RTLIL::SigSpec sig;
 					if (child->children.size() > 0)
 						sig = child->children[0]->genRTLIL();
+					for (auto &attr : child->attributes) {
+						if (attr.second->type != AST_CONSTANT)
+							log_file_error(filename, linenum, "Attribute `%s' with non-constant value.\n", attr.first.c_str());
+						sig.attributes[attr.first] = attr.second->asAttrConst();
+					}
 					if (child->str.size() == 0) {
 						char buf[100];
 						snprintf(buf, 100, "$%d", ++port_counter);
