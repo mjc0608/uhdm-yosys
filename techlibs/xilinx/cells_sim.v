@@ -172,8 +172,12 @@ module XORCY(output O, input CI, LI);
 endmodule
 
 module CARRY4(output [3:0] CO, O, input CI, CYINIT, input [3:0] DI, S);
-  assign O = S ^ {CO[2:0], CI | CYINIT};
-  assign CO[0] = S[0] ? CI | CYINIT : DI[0];
+  wire CI0 = (CI === 1'bz) ? CYINIT :
+      (CYINIT === 1'bz) ? CI :
+      (CI | CYINIT);
+
+  assign O = S ^ {CO[2:0], CI0};
+  assign CO[0] = S[0] ? CI0 : DI[0];
   assign CO[1] = S[1] ? CO[0] : DI[1];
   assign CO[2] = S[2] ? CO[1] : DI[2];
   assign CO[3] = S[3] ? CO[2] : DI[3];
@@ -182,8 +186,12 @@ endmodule
 `ifdef _EXPLICIT_CARRY
 
 module CARRY4_COUT(output [3:0] CO, O, output COUT, input CI, CYINIT, input [3:0] DI, S);
-  assign O = S ^ {CO[2:0], CI | CYINIT};
-  assign CO[0] = S[0] ? CI | CYINIT : DI[0];
+  wire CI0 = (CI === 1'bz) ? CYINIT :
+      (CYINIT === 1'bz) ? CI :
+      (CI | CYINIT);
+
+  assign O = S ^ {CO[2:0], CI0};
+  assign CO[0] = S[0] ? CI0 : DI[0];
   assign CO[1] = S[1] ? CO[0] : DI[1];
   assign CO[2] = S[2] ? CO[1] : DI[2];
   wire CO_TOP  = S[3] ? CO[2] : DI[3];
