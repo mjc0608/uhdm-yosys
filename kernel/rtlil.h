@@ -701,6 +701,7 @@ public:
 		hash_ = other.hash_;
 		chunks_ = std::move(other.chunks_);
 		bits_ = std::move(other.bits_);
+		attributes = std::move(other.attributes);
 	}
 
 	const RTLIL::SigSpec &operator=(RTLIL::SigSpec &&other) {
@@ -708,6 +709,7 @@ public:
 		hash_ = other.hash_;
 		chunks_ = std::move(other.chunks_);
 		bits_ = std::move(other.bits_);
+		attributes = std::move(other.attributes);
 		return *this;
 	}
 

@@ -3023,6 +3023,7 @@ void RTLIL::SigSpec::sort()
 	unpack();
 	cover("kernel.rtlil.sigspec.sort");
 	std::sort(bits_.begin(), bits_.end());
+	attributes.sort();
 }
 
 void RTLIL::SigSpec::sort_and_unify()
