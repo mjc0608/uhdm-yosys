@@ -255,6 +255,7 @@ cell_stmt:
 	} cell_body TOK_END EOL;
 
 cell_body:
+	cell_body attr_stmt |
 	cell_body TOK_PARAMETER TOK_ID constant EOL {
 		current_cell->parameters[$3] = *$4;
 		free($3);
@@ -275,9 +276,11 @@ cell_body:
 	cell_body TOK_CONNECT TOK_ID sigspec EOL {
 		if (current_cell->hasPort($3))
 			rtlil_frontend_ilang_yyerror(stringf("ilang error: redefinition of cell port %s.", $3).c_str());
+		$4->attributes = attrbuf;
 		current_cell->setPort($3, *$4);
 		delete $4;
 		free($3);
+		attrbuf.clear();
 	} |
 	/* empty */;
 
