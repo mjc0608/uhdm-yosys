@@ -1,0 +1,205 @@
+{
+  "creator": "Yosys 0.8+498 (git sha1 1bdc7e9d, gcc 7.4.0-1ubuntu1~18.04 -fPIC -Os)",
+  "modules": {
+    "bar": {
+      "attributes": {
+        "cells_not_processed": 1,
+        "src": "attrib02_port_decl.v:1"
+      },
+      "parameters": {
+      },
+      "ports": {
+        "clk": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "rst": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "inp": {
+          "direction": "input",
+          "bits": [ 4 ]
+        },
+        "out": {
+          "direction": "output",
+          "bits": [ 5 ]
+        }
+      },
+      "cells": {
+        "$not$attrib02_port_decl.v:12$2": {
+          "hide_name": 1,
+          "type": "$not",
+          "parameters": {
+            "A_SIGNED": 0,
+            "A_WIDTH": 1,
+            "Y_WIDTH": 1
+          },
+          "attributes": {
+            "src": "attrib02_port_decl.v:12"
+          },
+          "port_directions": {
+            "A": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": {
+              "bits": [ 4 ],
+              "attributes": {
+            }
+            },
+            "Y": {
+              "bits": [ 6 ],
+              "attributes": {
+            }
+            }
+          }
+        }
+      },
+      "netnames": {
+        "$0\\out[0:0]": {
+          "hide_name": 1,
+          "bits": [ 7 ],
+          "attributes": {
+            "src": "attrib02_port_decl.v:10"
+          }
+        },
+        "$not$attrib02_port_decl.v:12$2_Y": {
+          "hide_name": 1,
+          "bits": [ 6 ],
+          "attributes": {
+            "src": "attrib02_port_decl.v:12"
+          }
+        },
+        "clk": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "attrib02_port_decl.v:3",
+            "this_is_clock": 1
+          }
+        },
+        "inp": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "attrib02_port_decl.v:6"
+          }
+        },
+        "out": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "attributes": {
+            "an_output_register": 1,
+            "src": "attrib02_port_decl.v:8"
+          }
+        },
+        "rst": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "attrib02_port_decl.v:5",
+            "this_is_reset": 1
+          }
+        }
+      }
+    },
+    "foo": {
+      "attributes": {
+        "cells_not_processed": 1,
+        "src": "attrib02_port_decl.v:16"
+      },
+      "parameters": {
+      },
+      "ports": {
+        "clk": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "rst": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "inp": {
+          "direction": "input",
+          "bits": [ 4 ]
+        },
+        "out": {
+          "direction": "output",
+          "bits": [ 5 ]
+        }
+      },
+      "cells": {
+        "bar_instance": {
+          "hide_name": 0,
+          "type": "bar",
+          "parameters": {
+          },
+          "attributes": {
+            "module_not_derived": 1,
+            "src": "attrib02_port_decl.v:23"
+          },
+          "port_directions": {
+            "$1": "output",
+            "$2": "output",
+            "$3": "output",
+            "$4": "output"
+          },
+          "connections": {
+            "$1": {
+              "bits": [ 2 ],
+              "attributes": {
+            }
+            },
+            "$2": {
+              "bits": [ 3 ],
+              "attributes": {
+            }
+            },
+            "$3": {
+              "bits": [ 4 ],
+              "attributes": {
+            }
+            },
+            "$4": {
+              "bits": [ 5 ],
+              "attributes": {
+            }
+            }
+          }
+        }
+      },
+      "netnames": {
+        "clk": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "attrib02_port_decl.v:18",
+            "this_is_the_master_clock": 1
+          }
+        },
+        "inp": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "attrib02_port_decl.v:20"
+          }
+        },
+        "out": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "attributes": {
+            "src": "attrib02_port_decl.v:21"
+          }
+        },
+        "rst": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "attrib02_port_decl.v:19"
+          }
+        }
+      }
+    }
+  }
+}
