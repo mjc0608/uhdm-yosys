@@ -1,0 +1,217 @@
+{
+  "creator": "Yosys 0.8+498 (git sha1 abef145f, gcc 7.4.0-1ubuntu1~18.04 -fPIC -Os)",
+  "modules": {
+    "bar": {
+      "attributes": {
+        "dynports": 1,
+        "cells_not_processed": 1,
+        "src": "attrib03_parameter.v:1"
+      },
+      "parameters": {
+        "WIDTH": {
+          "attributes": {
+            "bus_width": 1
+          },
+          "default": 2
+        }
+      },
+      "ports": {
+        "clk": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "rst": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "inp": {
+          "direction": "input",
+          "bits": [ 4, 5 ]
+        },
+        "out": {
+          "direction": "output",
+          "bits": [ 6, 7 ]
+        }
+      },
+      "cells": {
+        "$add$attrib03_parameter.v:16$2": {
+          "hide_name": 1,
+          "type": "$add",
+          "parameters": {
+            "A_SIGNED": 0,
+            "A_WIDTH": 2,
+            "B_SIGNED": 0,
+            "B_WIDTH": 32,
+            "Y_WIDTH": 32
+          },
+          "attributes": {
+            "src": "attrib03_parameter.v:16"
+          },
+          "port_directions": {
+            "A": "input",
+            "B": "input",
+            "Y": "output"
+          },
+          "connections": {
+            "A": {
+              "bits": [ 4, 5 ],
+              "attributes": {
+            }
+            },
+            "B": {
+              "bits": [ "1", "0", "1", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+              "attributes": {
+            }
+            },
+            "Y": {
+              "bits": [ 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39 ],
+              "attributes": {
+            }
+            }
+          }
+        }
+      },
+      "netnames": {
+        "$0\\out[1:0]": {
+          "hide_name": 1,
+          "bits": [ 40, 41 ],
+          "attributes": {
+            "src": "attrib03_parameter.v:14"
+          }
+        },
+        "$add$attrib03_parameter.v:16$2_Y": {
+          "hide_name": 1,
+          "bits": [ 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39 ],
+          "attributes": {
+            "src": "attrib03_parameter.v:16"
+          }
+        },
+        "clk": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "attrib03_parameter.v:9"
+          }
+        },
+        "inp": {
+          "hide_name": 0,
+          "bits": [ 4, 5 ],
+          "attributes": {
+            "src": "attrib03_parameter.v:11"
+          }
+        },
+        "out": {
+          "hide_name": 0,
+          "bits": [ 6, 7 ],
+          "attributes": {
+            "src": "attrib03_parameter.v:12"
+          }
+        },
+        "rst": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "attrib03_parameter.v:10"
+          }
+        }
+      }
+    },
+    "foo": {
+      "attributes": {
+        "cells_not_processed": 1,
+        "src": "attrib03_parameter.v:20"
+      },
+      "parameters": {
+      },
+      "ports": {
+        "clk": {
+          "direction": "input",
+          "bits": [ 2 ]
+        },
+        "rst": {
+          "direction": "input",
+          "bits": [ 3 ]
+        },
+        "inp": {
+          "direction": "input",
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11 ]
+        },
+        "out": {
+          "direction": "output",
+          "bits": [ 12, 13, 14, 15, 16, 17, 18, 19 ]
+        }
+      },
+      "cells": {
+        "bar_instance": {
+          "hide_name": 0,
+          "type": "bar",
+          "parameters": {
+            "WIDTH": 8
+          },
+          "attributes": {
+            "module_not_derived": 1,
+            "src": "attrib03_parameter.v:26"
+          },
+          "port_directions": {
+            "$1": "output",
+            "$2": "output",
+            "$3": "output",
+            "$4": "output"
+          },
+          "connections": {
+            "$1": {
+              "bits": [ 2 ],
+              "attributes": {
+            }
+            },
+            "$2": {
+              "bits": [ 3 ],
+              "attributes": {
+            }
+            },
+            "$3": {
+              "bits": [ 4, 5, 6, 7, 8, 9, 10, 11 ],
+              "attributes": {
+            }
+            },
+            "$4": {
+              "bits": [ 12, 13, 14, 15, 16, 17, 18, 19 ],
+              "attributes": {
+            }
+            }
+          }
+        }
+      },
+      "netnames": {
+        "clk": {
+          "hide_name": 0,
+          "bits": [ 2 ],
+          "attributes": {
+            "src": "attrib03_parameter.v:21"
+          }
+        },
+        "inp": {
+          "hide_name": 0,
+          "bits": [ 4, 5, 6, 7, 8, 9, 10, 11 ],
+          "attributes": {
+            "src": "attrib03_parameter.v:23"
+          }
+        },
+        "out": {
+          "hide_name": 0,
+          "bits": [ 12, 13, 14, 15, 16, 17, 18, 19 ],
+          "attributes": {
+            "src": "attrib03_parameter.v:24"
+          }
+        },
+        "rst": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "attrib03_parameter.v:22"
+          }
+        }
+      }
+    }
+  }
+}
