@@ -823,8 +823,11 @@ RTLIL::Const AstNode::bitsAsConst(int width)
 
 RTLIL::Const AstNode::asAttrConst()
 {
-	log_assert(type == AST_CONSTANT);
+	log_assert(type == AST_CONSTANT || type == AST_REALVALUE);
 
+	if (type == AST_REALVALUE)
+		return RTLIL::Const::from_real(realvalue);
+	
 	RTLIL::Const val;
 	val.bits = bits;
 
