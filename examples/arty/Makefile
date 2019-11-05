@@ -4,5 +4,10 @@ ifndef YOSYS
 endif
 	$(YOSYS) -s "xdc2fasm.ys" -l yosys.log
 
+xdc-plugin/xdc.so:
+	$(MAKE) -C xdc-plugin xdc.so
+	$(MAKE) -C xdc-plugin install
+
 clean:
+	$(MAKE) -C xdc-plugin clean
 	rm -rf *.eblif *.premap.v *synth.v *.fasm *.log
