@@ -1,0 +1,5 @@
+plugin -i xdc
+read_verilog counter_arty.v
+tcl read_xdc.tcl
+write_fasm counter_arty.fasm
+

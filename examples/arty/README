@@ -1,0 +1,7 @@
+
+A simple example design, based on the Digilent ARTY board
+===========================================================
+
+This example shows how Yosys can read XDC (Xilinx Design Constrain) file
+and writes a FASM output with some of the features of the design.
+
