@@ -21,6 +21,9 @@ ENABLE_LIBYOSYS := 0
 ENABLE_PROTOBUF := 0
 ENABLE_ZLIB := 1
 
+# valid only if ENABLE_READLINE == 1
+ENABLE_STATIC_READLINE ?= 0
+
 # python wrappers
 ENABLE_PYOSYS := 0
 
@@ -61,6 +64,7 @@ GENFILES =
 EXTRA_OBJS =
 EXTRA_TARGETS =
 TARGETS = yosys$(EXE) yosys-config
+STATIC_LIBS =
 
 PRETTY = 1
 SMALL = 0
@@ -354,7 +358,15 @@ CXXFLAGS += -DYOSYS_ENABLE_READLINE
 ifeq ($(OS), FreeBSD)
 CXXFLAGS += -I/usr/local/include
 endif
+ifeq ($(ENABLE_STATIC_READLINE), 1)
+LDLIBS += -ltinfo
+ifeq ($(READLINE_STATIC),)
+$(error Static readline selected, path to libreadline.a is not provided!)
+endif
+STATIC_LIBS += $(READLINE_STATIC)
+else
 LDLIBS += -lreadline
+endif
 ifeq ($(LINK_CURSES),1)
 LDLIBS += -lcurses
 ABCMKARGS += "ABC_READLINE_LIBRARIES=-lcurses -lreadline"
@@ -603,7 +615,7 @@ yosys.js: $(filter-out yosysjs-$(YOSYS_VER).zip,$(EXTRA_TARGETS))
 endif
 
 yosys$(EXE): $(OBJS)
-	$(P) $(LD) -o yosys$(EXE) $(LDFLAGS) $(OBJS) $(LDLIBS)
+	$(P) $(LD) -o yosys$(EXE) $(LDFLAGS) $(OBJS) $(LDLIBS) $(STATIC_LIBS)
 
 libyosys.so: $(filter-out kernel/driver.o,$(OBJS))
 ifeq ($(OS), Darwin)
