@@ -409,8 +409,6 @@ void dump_attributes(std::ostream &f, std::string indent, dict<RTLIL::IdString, 
 	if (attr2comment)
 		as_comment = true;
 	for (auto it = attributes.begin(); it != attributes.end(); ++it) {
-		if (it->first == "\\init" && regattr)
-            continue;
 		if (no_pwire_mark && (it->first == "\\parameter" || it->first == "\\localparam"))
 			continue;
 		f << stringf("%s" "%s %s", indent.c_str(), as_comment ? "/*" : "(*", id(it->first).c_str());
