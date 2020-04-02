@@ -19,14 +19,6 @@ struct SynthQuickLogicPass : public ScriptPass
         log("    -top <module>\n");
         log("         use the specified module as top module\n");
         log("\n");
-        log("    -exe <command>\n");
-#ifdef ABCEXTERNAL
-        log("        use the specified command instead of \"" ABCEXTERNAL "\" to execute ABC.\n");
-#else
-        log("        use the specified command instead of \"<yosys-bindir>/yosys-abc\" to execute ABC.\n");
-#endif
-        log("        This can e.g. be used to call a specific version of ABC or a wrapper.\n");
-        log("\n");
         log("    -edif <file>\n");
         log("        write the design to the specified edif file. writing of an output file\n");
         log("        is omitted if this parameter is not specified.\n");
@@ -45,18 +37,12 @@ struct SynthQuickLogicPass : public ScriptPass
     std::string top_opt = "-auto-top";
     std::string edif_file = "";
     std::string blif_file = "";
-    std::string exe_file = "";
     std::string currmodule = "";
     bool flatten = false;
 
     void clear_flags() YS_OVERRIDE
     {
         top_opt = "-auto-top";
-#ifdef ABCEXTERNAL
-        exe_file = ABCEXTERNAL;
-#else
-        exe_file = proc_self_dirname() + "yosys-abc";
-#endif
         flatten = false;
         edif_file.clear();
         blif_file.clear();
@@ -84,10 +70,6 @@ struct SynthQuickLogicPass : public ScriptPass
             }
             if (args[argidx] == "-flatten") {
                 flatten = true;
-                continue;
-            }
-            if (args[argidx] == "-exe" && argidx+1 < args.size()) {
-                exe_file = args[++argidx];
                 continue;
             }
             break;
@@ -118,40 +100,39 @@ struct SynthQuickLogicPass : public ScriptPass
                 run("flatten", "(with '-flatten')");
             run("tribuf -logic");
             run("opt_expr");
-            run("proc");
             run("opt_clean");
-            run("proc");
             run("check");
             run("opt");
-            run("proc");
+            run("peepopt");
+            run("opt_clean");
             run("techmap");
             run("abc -lut 1:4");
             run("opt_clean");
-            run("proc");
             run("techmap -map +/quicklogic/cells_map.v");
             run("clean");
-            run("opt");
             run("check");
-            run("peepopt");
             run("opt_clean -purge");
-            run("clean -purge");
-            /* avoid sefault when this code is run without active design (e.g when calling help) */
-            if (!this->active_design)
-                this->currmodule = "top";
-            else
+            if (help_mode) {
+                run("select -module top");
+            } else {
                 this->currmodule = this->active_design->top_module()->name.str();
-            if (this->currmodule.size() > 0)
-                run(stringf("select -module %s", this->currmodule.c_str()));
+                if (this->currmodule.size() > 0)
+                    run(stringf("select -module %s", this->currmodule.c_str()));
+            }
             run("select -set clock_inputs */t:dff* %x:+[CLK,CLR,PRE] */t:dff* %d");
             run("select -set invclock_inputs */t:dff* %x:+[CLK,CLR,PRE] */t:dff* %d %n");
             run("iopadmap -bits -inpad ckpad Q:P @clock_inputs");
             run("iopadmap -bits -outpad outpad A:P -inpad inpad Q:P @invclock_inputs");
             run("iopadmap -bits -tinoutpad bipad EN:Q:A:P");
-            if (this->currmodule.size() > 0)
+            if (help_mode) {
+                run("select -clear");
+            } else if (this->currmodule.size() > 0)
                 run("select -clear");
             run("splitnets -ports -format ()");
             run("hilomap -hicell logic_1 a -locell logic_0 a -singleton");
             run("techmap -map +/quicklogic/cells_map.v");
+            run("setundef -zero -params -undriven -expose");
+            run("opt_clean");
             run("clean -purge");
             run("opt");
         }

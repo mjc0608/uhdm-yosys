@@ -194,77 +194,151 @@ module logic_1(output a);
     assign a = 1;
 endmodule
 
+module logic_cell_macro(
+    input BA1,
+    input BA2,
+    input BAB,
+    input BAS1,
+    input BAS2,
+    input BB1,
+    input BB2,
+    input BBS1,
+    input BBS2,
+    input BSL,
+    input F1,
+    input F2,
+    input FS,
+    input QCK,
+    input QCKS,
+    input QDI,
+    input QDS,
+    input QEN,
+    input QRT,
+    input QST,
+    input TA1,
+    input TA2,
+    input TAB,
+    input TAS1,
+    input TAS2,
+    input TB1,
+    input TB2,
+    input TBS,
+    input TBS1,
+    input TBS2,
+    input TSL,
+    output CZ,
+    output FZ,
+    output QZ,
+    output TZ);
+
+wire TAP1,TAP2,TBP1,TBP2,BAP1,BAP2,BBP1,BBP2,QCKP,TAI,TBI,BAI,BBI,TZI,BZI,CZI,QZI;
+reg QZ;
+
+assign TAP1 = TAS1 ? ~TA1 : TA1; 
+assign TAP2 = TAS2 ? ~TA2 : TA2; 
+assign TBP1 = TBS1 ? ~TB1 : TB1; 
+assign TBP2 = TBS2 ? ~TB2 : TB2;
+assign BAP1 = BAS1 ? ~BA1 : BA1;
+assign BAP2 = BAS2 ? ~BA2 : BA2;
+assign BBP1 = BBS1 ? ~BB1 : BB1;
+assign BBP2 = BBS2 ? ~BB2 : BB2;
+
+assign TAI = TSL ? TAP2 : TAP1;
+assign TBI = TSL ? TBP2 : TBP1;
+assign BAI = BSL ? BAP2 : BAP1;
+assign BBI = BSL ? BBP2 : BBP1;
+assign TZI = TAB ? TBI : TAI;
+assign BZI = BAB ? BBI : BAI;
+assign CZI = TBS ? BZI : TZI;
+assign QZI = QDS ? QDI : CZI ;
+assign FZ = FS ? F2 : F1;
+assign TZ = TZI;
+assign CZ = CZI;
+assign QCKP = QCKS ? QCK : ~QCK;
+
+always @(posedge QCKP)
+	if(~QRT && ~QST)
+		if(QEN)
+		QZ = QZI;
+always @(QRT or QST)
+	if(QRT)
+		QZ = 1'b0;
+	else if (QST)
+		QZ = 1'b1;
+
+endmodule
+
 // BLACK BOXES
 
 (* blackbox *)
 (* keep *)
 module qlal4s3b_cell_macro(
-input	WB_CLK,
-input	WBs_ACK,
-input	[31:0]WBs_RD_DAT,
-output	[3:0]WBs_BYTE_STB,
-output	WBs_CYC,
-output	WBs_WE,
-output	WBs_RD,
-output	WBs_STB,
-output	[16:0]WBs_ADR,
-input	[3:0]SDMA_Req,
-input	[3:0]SDMA_Sreq,
-output	[3:0]SDMA_Done,
-output	[3:0]SDMA_Active,
-input	[3:0]FB_msg_out,
-input	[7:0]FB_Int_Clr,
-output	FB_Start,
-input	FB_Busy,
-output	WB_RST,
-output	Sys_PKfb_Rst,
-output	Sys_Clk0,
-output	Sys_Clk0_Rst,
-output	Sys_Clk1,
-output	Sys_Clk1_Rst,
-output	Sys_Pclk,
-output	Sys_Pclk_Rst,
-input	Sys_PKfb_Clk,
-input	[31:0]FB_PKfbData,
-output	[31:0]WBs_WR_DAT,
-input	[3:0]FB_PKfbPush,
-input	FB_PKfbSOF,
-input	FB_PKfbEOF,
-output	[7:0]Sensor_Int,
-output	FB_PKfbOverflow,
-output	[23:0]TimeStamp,
-input	Sys_PSel,
-input	[15:0]SPIm_Paddr,
-input	SPIm_PEnable,
-input	SPIm_PWrite,
-input	[31:0]SPIm_PWdata,
-output	SPIm_PReady,
-output	SPIm_PSlvErr,
-output	[31:0]SPIm_Prdata,
-input	[15:0]Device_ID,
-input	[13:0]FBIO_In_En,
-input	[13:0]FBIO_Out,
-input	[13:0]FBIO_Out_En,
-output	[13:0]FBIO_In,
-inout 	[13:0]SFBIO,
-input   Device_ID_6S,
-input   Device_ID_4S,
-input   SPIm_PWdata_26S,
-input   SPIm_PWdata_24S,
-input   SPIm_PWdata_14S,
-input   SPIm_PWdata_11S,
-input   SPIm_PWdata_0S,
-input   SPIm_Paddr_8S,
-input   SPIm_Paddr_6S,
-input   FB_PKfbPush_1S,
-input   FB_PKfbData_31S,
-input   FB_PKfbData_21S,
-input   FB_PKfbData_19S,
-input   FB_PKfbData_9S,
-input   FB_PKfbData_6S,
-input   Sys_PKfb_ClkS,
-input   FB_BusyS,
-input   WB_CLKS);
+    input	WB_CLK,
+    input	WBs_ACK,
+    input	[31:0]WBs_RD_DAT,
+    output	[3:0]WBs_BYTE_STB,
+    output	WBs_CYC,
+    output	WBs_WE,
+    output	WBs_RD,
+    output	WBs_STB,
+    output	[16:0]WBs_ADR,
+    input	[3:0]SDMA_Req,
+    input	[3:0]SDMA_Sreq,
+    output	[3:0]SDMA_Done,
+    output	[3:0]SDMA_Active,
+    input	[3:0]FB_msg_out,
+    input	[7:0]FB_Int_Clr,
+    output	FB_Start,
+    input	FB_Busy,
+    output	WB_RST,
+    output	Sys_PKfb_Rst,
+    output	Sys_Clk0,
+    output	Sys_Clk0_Rst,
+    output	Sys_Clk1,
+    output	Sys_Clk1_Rst,
+    output	Sys_Pclk,
+    output	Sys_Pclk_Rst,
+    input	Sys_PKfb_Clk,
+    input	[31:0]FB_PKfbData,
+    output	[31:0]WBs_WR_DAT,
+    input	[3:0]FB_PKfbPush,
+    input	FB_PKfbSOF,
+    input	FB_PKfbEOF,
+    output	[7:0]Sensor_Int,
+    output	FB_PKfbOverflow,
+    output	[23:0]TimeStamp,
+    input	Sys_PSel,
+    input	[15:0]SPIm_Paddr,
+    input	SPIm_PEnable,
+    input	SPIm_PWrite,
+    input	[31:0]SPIm_PWdata,
+    output	SPIm_PReady,
+    output	SPIm_PSlvErr,
+    output	[31:0]SPIm_Prdata,
+    input	[15:0]Device_ID,
+    input	[13:0]FBIO_In_En,
+    input	[13:0]FBIO_Out,
+    input	[13:0]FBIO_Out_En,
+    output	[13:0]FBIO_In,
+    inout 	[13:0]SFBIO,
+    input   Device_ID_6S,
+    input   Device_ID_4S,
+    input   SPIm_PWdata_26S,
+    input   SPIm_PWdata_24S,
+    input   SPIm_PWdata_14S,
+    input   SPIm_PWdata_11S,
+    input   SPIm_PWdata_0S,
+    input   SPIm_Paddr_8S,
+    input   SPIm_Paddr_6S,
+    input   FB_PKfbPush_1S,
+    input   FB_PKfbData_31S,
+    input   FB_PKfbData_21S,
+    input   FB_PKfbData_19S,
+    input   FB_PKfbData_9S,
+    input   FB_PKfbData_6S,
+    input   Sys_PKfb_ClkS,
+    input   FB_BusyS,
+    input   WB_CLKS);
 
 endmodule /* qlal4s3b_cell_macro */
 
@@ -279,8 +353,8 @@ module ram8k_2x1_cell_macro (
     input [10:0] A1_1,
     input [10:0] A2_0,
     input [10:0] A2_1,
-    input CLK1_0 /* synthesis syn_isclock=1 */,
-    input CLK1_1 /* synthesis syn_isclock=1 */,
+    input CLK1_0,
+    input CLK1_1,
     output Almost_Empty_0, Almost_Empty_1, Almost_Full_0, Almost_Full_1,
     input ASYNC_FLUSH_0, ASYNC_FLUSH_1,CLK2_0, CLK2_1, ASYNC_FLUSH_S0, ASYNC_FLUSH_S1, CLK1EN_0, CLK1EN_1, CLK1S_0, CLK1S_1,CLK2EN_0,CLK2EN_1, CLK2S_0, CLK2S_1, CONCAT_EN_0, CONCAT_EN_1, CS1_0, CS1_1,CS2_0, CS2_1, DIR_0, DIR_1, FIFO_EN_0, FIFO_EN_1, P1_0, P1_1, P2_0,P2_1, PIPELINE_RD_0, PIPELINE_RD_1,
     output [3:0] POP_FLAG_0,
@@ -321,6 +395,16 @@ module qlal4s3_mult_16x16_cell (
     output [31:0] Cmult);
 
 endmodule /* qlal4s3_16x16_mult_cell */
+
+(* blackbox *)
+module qlal4s3_mult_cell_macro(
+    input [31:0] Amult,
+    input [31:0] Bmult,
+    input [1:0] Valid_mult,
+    input sel_mul_32x32,
+    output [63:0] Cmult);
+
+endmodule
 
 // module DFFSEC(output Q, input D, CLR, EN, CLK, N_11);
 //     parameter [0:0] INIT = 1'b0;
