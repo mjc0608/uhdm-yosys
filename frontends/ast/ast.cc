@@ -1322,7 +1322,7 @@ AstNode * AST::find_modport(AstNode *intf, std::string name)
 }
 
 // Iterate over all wires in an interface and add them as wires in the AST module:
-void AST::explode_interface_port(AstNode *module_ast, RTLIL::Module * intfmodule, std::string intfname, AstNode *modport)
+void AST::explode_interface_port(AstNode *module_ast, RTLIL::Module * intfmodule, std::string intfname, AstNode *modport, dict<RTLIL::IdString, RTLIL::Wire*> wires)
 {
 	for (auto &wire_it : intfmodule->wires_){
 		AstNode *wire = new AstNode(AST_WIRE, new AstNode(AST_RANGE, AstNode::mkconst_int(wire_it.second->width -1, true), AstNode::mkconst_int(0, true)));
@@ -1351,8 +1351,14 @@ void AST::explode_interface_port(AstNode *module_ast, RTLIL::Module * intfmodule
 			}
 		}
 		else { // If no modport, set inout
-			wire->is_input = true;
-			wire->is_output = true;
+			auto* interface_wire = wires[newname];
+			if (interface_wire) {
+				wire->is_input = interface_wire->port_input;
+				wire->is_output = interface_wire->port_output;
+			} else {
+				wire->is_input = true;
+				wire->is_output = true;
+			}
 			module_ast->children.push_back(wire);
 		}
 	}
@@ -1412,7 +1418,7 @@ void AstModule::reprocess_module(RTLIL::Design *design, dict<RTLIL::IdString, RT
 							std::string interface_modport_compare_str = "\\" + interface_modport;
 							AstNode *modport = find_modport(ast_module_of_interface->ast, interface_modport_compare_str); // modport == NULL if no modport
 							// Iterate over all wires in the interface and add them to the module:
-							explode_interface_port(new_ast, intfmodule, name_port, modport);
+							explode_interface_port(new_ast, intfmodule, name_port, modport, dict<RTLIL::IdString, RTLIL::Wire*>());
 						}
 						break;
 					}
@@ -1448,7 +1454,7 @@ void AstModule::reprocess_module(RTLIL::Design *design, dict<RTLIL::IdString, RT
 
 // create a new parametric module (when needed) and return the name of the generated module - WITH support for interfaces
 // This method is used to explode the interface when the interface is a port of the module (not instantiated inside)
-RTLIL::IdString AstModule::derive(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Const> parameters, dict<RTLIL::IdString, RTLIL::Module*> interfaces, dict<RTLIL::IdString, RTLIL::IdString> modports, bool /*mayfail*/)
+RTLIL::IdString AstModule::derive(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Const> parameters, dict<RTLIL::IdString, RTLIL::Module*> interfaces, dict<RTLIL::IdString, RTLIL::IdString> modports, dict<RTLIL::IdString, RTLIL::Wire*> wires, bool /*mayfail*/)
 {
 	AstNode *new_ast = NULL;
 	std::string modname = derive_common(design, parameters, &new_ast);
@@ -1490,7 +1496,7 @@ RTLIL::IdString AstModule::derive(RTLIL::Design *design, dict<RTLIL::IdString, R
 				modport = find_modport(ast_node_of_interface, interface_modport);
 			}
 			// Iterate over all wires in the interface and add them to the module:
-			explode_interface_port(new_ast, intfmodule, intfname, modport);
+			explode_interface_port(new_ast, intfmodule, intfname, modport, wires);
 		}
 
 		design->add(process_module(new_ast, false));

@@ -207,6 +207,7 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 		}
 		dict<RTLIL::IdString, RTLIL::Module*> interfaces_to_add_to_submodule;
 		dict<RTLIL::IdString, RTLIL::IdString> modports_used_in_submodule;
+		dict<RTLIL::IdString, RTLIL::Wire*> wires_used_in_submodule;
 
 		if (design->modules_.count(cell->type) == 0)
 		{
@@ -293,8 +294,10 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 									log_error("Could not find signal '%s' in '%s'\n", signal_name2.c_str(), log_id(module->name));
 								}
 								else {
-									RTLIL::Wire *wire_in_parent = module->wire(signal_name2);
+									auto* interface_cell = module->cells_[interface_name];
+									auto* wire_in_parent = interface_cell->connections_[mod_wire.first].as_wire();
 									connections_to_add_signal.push_back(wire_in_parent);
+									wires_used_in_submodule[signal_name1] = mod_wire.second;
 								}
 							}
 							connections_to_remove.push_back(conn.first);
@@ -379,7 +382,7 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 			continue;
 		}
 
-		cell->type = mod->derive(design, cell->parameters, interfaces_to_add_to_submodule, modports_used_in_submodule);
+		cell->type = mod->derive(design, cell->parameters, interfaces_to_add_to_submodule, modports_used_in_submodule, wires_used_in_submodule);
 		cell->parameters.clear();
 		did_something = true;
 

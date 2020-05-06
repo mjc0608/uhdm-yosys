@@ -648,8 +648,8 @@ struct RTLIL::AttrObject
 	void set_bool_attribute(RTLIL::IdString id, bool value=true);
 	bool get_bool_attribute(RTLIL::IdString id) const;
 
-	bool get_blackbox_attribute(bool ignore_wb=false) const {
-		return get_bool_attribute(ID::blackbox) || (!ignore_wb && get_bool_attribute(ID::whitebox));
+	bool get_blackbox_attribute(bool=false) const {
+        return false; // temporary
 	}
 
 	void set_strpool_attribute(RTLIL::IdString id, const pool<string> &data);
@@ -1063,7 +1063,7 @@ public:
 	Module();
 	virtual ~Module();
 	virtual RTLIL::IdString derive(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Const> parameters, bool mayfail = false);
-	virtual RTLIL::IdString derive(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Const> parameters, dict<RTLIL::IdString, RTLIL::Module*> interfaces, dict<RTLIL::IdString, RTLIL::IdString> modports, bool mayfail = false);
+	virtual RTLIL::IdString derive(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Const> parameters, dict<RTLIL::IdString, RTLIL::Module*> interfaces, dict<RTLIL::IdString, RTLIL::IdString> modports, dict<RTLIL::IdString, RTLIL::Wire*> wires, bool mayfail = false);
 	virtual size_t count_id(RTLIL::IdString id);
 	virtual void reprocess_module(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Module *> local_interfaces);
 
