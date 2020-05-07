@@ -295,7 +295,9 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 								}
 								else {
 									auto* interface_cell = module->cells_[interface_name];
-									auto* wire_in_parent = interface_cell->connections_[mod_wire.first].as_wire();
+									auto it = interface_cell->connections_.find(mod_wire.first);
+									auto* wire_in_parent = it->second.as_wire();
+									interface_cell->connections_.erase(it);
 									connections_to_add_signal.push_back(wire_in_parent);
 									wires_used_in_submodule[signal_name1] = mod_wire.second;
 								}
@@ -353,6 +355,8 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 			if (flag_simcheck)
 				log_error("Module `%s' referenced in module `%s' in cell `%s' is a blackbox/whitebox module.\n",
 						cell->type.c_str(), module->name.c_str(), cell->name.c_str());
+			cell->set_bool_attribute("\\is_interface");
+			interfaces_in_module[cell->name] = mod;
 			continue;
 		}
 
