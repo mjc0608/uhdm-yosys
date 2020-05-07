@@ -296,8 +296,13 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 								else {
 									auto* interface_cell = module->cells_[interface_name];
 									auto it = interface_cell->connections_.find(mod_wire.first);
-									auto* wire_in_parent = it->second.as_wire();
-									interface_cell->connections_.erase(it);
+									RTLIL::Wire* wire_in_parent;
+									if (it != interface_cell->connections_.end()) {
+										wire_in_parent = it->second.as_wire();
+										interface_cell->connections_.erase(it);
+									} else {
+										wire_in_parent = module->wire(signal_name2);
+									}
 									connections_to_add_signal.push_back(wire_in_parent);
 									wires_used_in_submodule[signal_name1] = mod_wire.second;
 								}
