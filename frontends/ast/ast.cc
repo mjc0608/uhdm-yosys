@@ -1351,10 +1351,10 @@ void AST::explode_interface_port(AstNode *module_ast, RTLIL::Module * intfmodule
 			}
 		}
 		else { // If no modport, set inout
-			auto* interface_wire = wires[newname];
-			if (interface_wire) {
-				wire->is_input = interface_wire->port_input;
-				wire->is_output = interface_wire->port_output;
+			auto interface_wire = wires.find(newname);
+			if (interface_wire != wires.end()) {
+				wire->is_input = interface_wire->second->port_input;
+				wire->is_output = interface_wire->second->port_output;
 			} else {
 				wire->is_input = true;
 				wire->is_output = true;
