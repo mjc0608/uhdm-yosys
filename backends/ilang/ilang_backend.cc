@@ -290,8 +290,16 @@ void ILANG_BACKEND::dump_module(std::ostream &f, std::string indent, RTLIL::Modu
 		if (!module->avail_parameters.empty()) {
 			if (only_selected)
 				f << stringf("\n");
-			for (auto &p : module->avail_parameters)
-				f << stringf("%s" "  parameter %s\n", indent.c_str(), p.c_str());
+			for (const auto &p : module->avail_parameters) {
+				const auto &it = module->parameter_default_values.find(p);
+				if (it == module->parameter_default_values.end()) {
+					f << stringf("%s" "  parameter %s\n", indent.c_str(), p.c_str());
+				} else {
+					f << stringf("%s" "  parameter %s ", indent.c_str(), p.c_str());
+					dump_const(f, it->second);
+					f << stringf("\n");
+				}
+			}
 		}
 	}
 
@@ -358,10 +366,10 @@ void ILANG_BACKEND::dump_design(std::ostream &f, RTLIL::Design *design, bool onl
 
 	if (!flag_m) {
 		int count_selected_mods = 0;
-		for (auto it = design->modules_.begin(); it != design->modules_.end(); ++it) {
-			if (design->selected_whole_module(it->first))
+		for (auto module : design->modules()) {
+			if (design->selected_whole_module(module->name))
 				flag_m = true;
-			if (design->selected(it->second))
+			if (design->selected(module))
 				count_selected_mods++;
 		}
 		if (count_selected_mods > 1)
@@ -374,11 +382,11 @@ void ILANG_BACKEND::dump_design(std::ostream &f, RTLIL::Design *design, bool onl
 		f << stringf("autoidx %d\n", autoidx);
 	}
 
-	for (auto it = design->modules_.begin(); it != design->modules_.end(); ++it) {
-		if (!only_selected || design->selected(it->second)) {
+	for (auto module : design->modules()) {
+		if (!only_selected || design->selected(module)) {
 			if (only_selected)
 				f << stringf("\n");
-			dump_module(f, "", it->second, design, only_selected, flag_m, flag_n);
+			dump_module(f, "", module, design, only_selected, flag_m, flag_n);
 		}
 	}
 

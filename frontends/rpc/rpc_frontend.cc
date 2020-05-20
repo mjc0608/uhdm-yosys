@@ -28,13 +28,12 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+extern char **environ;
 #endif
 
 #include "libs/json11/json11.hpp"
 #include "libs/sha1/sha1.h"
 #include "kernel/yosys.h"
-
-extern char **environ;
 
 YOSYS_NAMESPACE_BEGIN
 
@@ -158,7 +157,7 @@ struct RpcServer {
 struct RpcModule : RTLIL::Module {
 	std::shared_ptr<RpcServer> server;
 
-	RTLIL::IdString derive(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Const> parameters, bool /*mayfail*/) YS_OVERRIDE {
+	RTLIL::IdString derive(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Const> &parameters, bool /*mayfail*/) YS_OVERRIDE {
 		std::string stripped_name = name.str();
 		if (stripped_name.compare(0, 9, "$abstract") == 0)
 			stripped_name = stripped_name.substr(9);
@@ -217,7 +216,9 @@ struct RpcModule : RTLIL::Module {
 
 				module.second->name = mangled_name;
 				module.second->design = design;
-				module.second->attributes.erase("\\top");
+				module.second->attributes.erase(ID::top);
+				if (!module.second->has_attribute(ID::hdlname))
+					module.second->set_string_attribute(ID::hdlname, module.first.str());
 				design->modules_[mangled_name] = module.second;
 				derived_design->modules_.erase(module.first);
 			}
@@ -237,6 +238,11 @@ struct RpcModule : RTLIL::Module {
 };
 
 #if defined(_WIN32)
+
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 struct HandleRpcServer : RpcServer {
 	HANDLE hsend, hrecv;
