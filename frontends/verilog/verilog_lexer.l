@@ -417,7 +417,15 @@ supply1 { return TOK_SUPPLY1; }
 		return TOK_USER_TYPE;
 	}
 	else {
-		yylval->string = new std::string(std::string("\\") + yytext);
+		for (const auto& pkg_name : imported_pkgs) { //check if this token was not imported by wildcard import
+			std::string name_in_package = pkg_name + "::" + yytext;
+			if (pkg_user_types.count(name_in_package) > 0) {
+				yylval->string = new std::string(name_in_package);
+				return TOK_PKG_USER_TYPE;
+			}
+		}
+
+		yylval->string = new std::string(s);
 		return TOK_ID;
 	}
 }
@@ -483,6 +491,19 @@ import[ \t\r\n]+\"(DPI|DPI-C)\"[ \t\r\n]+function[ \t\r\n]+ {
 
 <IMPORT_DPI>. {
 	return *yytext;
+}
+
+import[ \t\r\n]+[a-zA-Z_$][a-zA-Z0-9_$]*[ \t\r\n]*"::"[ \t\r\n]*"*"[ \t\r\n]*";" {
+  auto* ret = new std::string("\\");
+
+  const auto *ptr = yytext;
+  auto *begin = strchr(ptr, ' '); // skip "import"
+  for (; *begin && isspace(*begin); ++begin) ; // skip white spaces
+  const auto *end = strstr(ptr, "::");
+  *ret += std::string(begin, end); // copy package name
+  imported_pkgs.push_back(*ret);
+  yylval->string = ret;
+  return TOK_IMPORT_PACKAGE;
 }
 
 "\\"[^ \t\r\n]+ {

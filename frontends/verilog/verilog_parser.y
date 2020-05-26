@@ -70,6 +70,7 @@ namespace VERILOG_FRONTEND {
 	bool current_wire_rand, current_wire_const;
 	bool current_modport_input, current_modport_output;
 	std::istream *lexin;
+	std::vector<std::string> imported_pkgs;
 }
 YOSYS_NAMESPACE_END
 
@@ -249,7 +250,7 @@ static void rewriteAsMemoryNode(AstNode *node, AstNode *rangeNode)
 %token <string> TOK_STRING TOK_ID TOK_CONSTVAL TOK_REALVAL TOK_PRIMITIVE
 %token <string> TOK_SVA_LABEL TOK_SPECIFY_OPER TOK_MSG_TASKS
 %token <string> TOK_BASE TOK_BASED_CONSTVAL TOK_UNBASED_UNSIZED_CONSTVAL
-%token <string> TOK_USER_TYPE TOK_PKG_USER_TYPE
+%token <string> TOK_USER_TYPE TOK_PKG_USER_TYPE TOK_IMPORT_PACKAGE
 %token TOK_ASSERT TOK_ASSUME TOK_RESTRICT TOK_COVER TOK_FINAL
 %token ATTR_BEGIN ATTR_END DEFATTR_BEGIN DEFATTR_END
 %token TOK_MODULE TOK_ENDMODULE TOK_PARAMETER TOK_LOCALPARAM TOK_DEFPARAM
@@ -437,7 +438,7 @@ module:
 		mod->str = *$4;
 		append_attr(mod, $1);
 		delete $4;
-	} module_para_opt module_args_opt ';' module_body TOK_ENDMODULE opt_label {
+	} opt_package_import module_para_opt module_args_opt ';' module_body TOK_ENDMODULE opt_label {
 		if (port_stubs.size() != 0)
 			frontend_verilog_yyerror("Missing details for module port `%s'.",
 					port_stubs.begin()->first.c_str());
@@ -447,6 +448,8 @@ module:
 		current_ast_mod = NULL;
 		exitTypeScope();
 	};
+
+opt_package_import: import_package | %empty;
 
 module_para_opt:
 	'#' '(' { astbuf1 = nullptr; } module_para_list { if (astbuf1) delete astbuf1; } ')' | %empty;
@@ -752,7 +755,14 @@ module_body:
 module_body_stmt:
 	task_func_decl | specify_block | param_decl | localparam_decl | typedef_decl | defparam_decl | specparam_declaration | wire_decl | assign_stmt | cell_stmt |
 	enum_decl | struct_decl |
-	always_stmt | TOK_GENERATE module_gen_body TOK_ENDGENERATE | defattr | assert_property | checker_decl | ignored_specify_block;
+	always_stmt | TOK_GENERATE module_gen_body TOK_ENDGENERATE | defattr | assert_property | checker_decl | ignored_specify_block |
+	import_package;
+
+import_package: TOK_IMPORT_PACKAGE {
+		AstNode *node = new AstNode(AST_IMPORT_PACKAGE);
+		node->str = *$1;
+		ast_stack.back()->children.push_back(node);
+	};
 
 checker_decl:
 	TOK_CHECKER TOK_ID ';' {
