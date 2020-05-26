@@ -85,7 +85,7 @@ struct Ecp5GsrPass : public Pass {
 					continue;
 				
 				bool gsren = found_gsr;
-				if (cell->get_bool_attribute("\\nogsr"))
+				if (cell->get_bool_attribute(ID(nogsr)))
 					gsren = false;
 				cell->setParam(ID(GSR), gsren ? Const("ENABLED") : Const("DISABLED"));
 				
@@ -102,7 +102,7 @@ struct Ecp5GsrPass : public Pass {
 			{
 				if (cell->type != ID($_NOT_))
 					continue;
-				SigSpec sig_a = cell->getPort(ID(A)), sig_y = cell->getPort(ID(Y));
+				SigSpec sig_a = cell->getPort(ID::A), sig_y = cell->getPort(ID::Y);
 				if (GetSize(sig_a) < 1 || GetSize(sig_y) < 1)
 					continue;
 				SigBit a = sigmap(sig_a[0]);
@@ -114,9 +114,9 @@ struct Ecp5GsrPass : public Pass {
 			{
 				if (cell->type != ID(TRELLIS_FF))
 					continue;
-				if (!cell->hasParam(ID(GSR)) || cell->getParam(ID(GSR)).decode_string() != "ENABLED")
+				if (cell->getParam(ID(GSR)).decode_string() != "ENABLED")
 					continue;
-				if (!cell->hasParam(ID(SRMODE)) || cell->getParam(ID(SRMODE)).decode_string() != "ASYNC")
+				if (cell->getParam(ID(SRMODE)).decode_string() != "ASYNC")
 					continue;
 				SigSpec sig_lsr = cell->getPort(ID(LSR));
 				if (GetSize(sig_lsr) < 1)

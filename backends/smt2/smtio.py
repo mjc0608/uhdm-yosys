@@ -101,6 +101,8 @@ class SmtModInfo:
         self.cells = dict()
         self.asserts = dict()
         self.covers = dict()
+        self.maximize = set()
+        self.minimize = set()
         self.anyconsts = dict()
         self.anyseqs = dict()
         self.allconsts = dict()
@@ -304,7 +306,11 @@ class SmtIo:
 
     def p_open(self):
         assert self.p is None
-        self.p = subprocess.Popen(self.popen_vargs, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        try:
+            self.p = subprocess.Popen(self.popen_vargs, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        except FileNotFoundError:
+            print("%s SMT Solver '%s' not found in path." % (self.timestamp(), self.popen_vargs[0]), flush=True)
+            sys.exit(1)
         running_solvers[self.p_index] = self.p
         self.p_running = True
         self.p_next = None
@@ -497,6 +503,12 @@ class SmtIo:
 
         if fields[1] == "yosys-smt2-cover":
             self.modinfo[self.curmod].covers["%s_c %s" % (self.curmod, fields[2])] = fields[3]
+
+        if fields[1] == "yosys-smt2-maximize":
+            self.modinfo[self.curmod].maximize.add(fields[2])
+
+        if fields[1] == "yosys-smt2-minimize":
+            self.modinfo[self.curmod].minimize.add(fields[2])
 
         if fields[1] == "yosys-smt2-anyconst":
             self.modinfo[self.curmod].anyconsts[fields[2]] = (fields[4], None if len(fields) <= 5 else fields[5])
@@ -692,7 +704,13 @@ class SmtIo:
                     if msg is not None:
                         print("%s waiting for solver (%s)" % (self.timestamp(), msg), flush=True)
 
-        result = self.read()
+        if self.forall:
+            result = self.read()
+            while result not in ["sat", "unsat", "unknown"]:
+                print("%s %s: %s" % (self.timestamp(), self.solver, result))
+                result = self.read()
+        else:
+            result = self.read()
 
         if self.debug_file:
             print("(set-info :status %s)" % result, file=self.debug_file)
@@ -1032,12 +1050,17 @@ class MkVcd:
                 print("$var integer 32 t smt_step $end", file=self.f)
                 print("$var event 1 ! smt_clock $end", file=self.f)
 
+                def vcdescape(n):
+                    if n.startswith("$") or ":" in n:
+                        return "\\" + n
+                    return n
+
                 scope = []
                 for path in sorted(self.nets):
                     key, width = self.nets[path]
 
                     uipath = list(path)
-                    if "." in uipath[-1]:
+                    if "." in uipath[-1] and not uipath[-1].startswith("$"):
                         uipath = uipath[0:-1] + uipath[-1].split(".")
                     for i in range(len(uipath)):
                         uipath[i] = re.sub(r"\[([^\]]*)\]", r"<\1>", uipath[i])
@@ -1048,15 +1071,13 @@ class MkVcd:
 
                     while uipath[:-1] != scope:
                         scopename = uipath[len(scope)]
-                        if scopename.startswith("$"):
-                            scopename = "\\" + scopename
-                        print("$scope module %s $end" % scopename, file=self.f)
+                        print("$scope module %s $end" % vcdescape(scopename), file=self.f)
                         scope.append(uipath[len(scope)])
 
                     if path in self.clocks and self.clocks[path][1] == "event":
-                        print("$var event 1 %s %s $end" % (key, uipath[-1]), file=self.f)
+                        print("$var event 1 %s %s $end" % (key, vcdescape(uipath[-1])), file=self.f)
                     else:
-                        print("$var wire %d %s %s $end" % (width, key, uipath[-1]), file=self.f)
+                        print("$var wire %d %s %s $end" % (width, key, vcdescape(uipath[-1])), file=self.f)
 
                 for i in range(len(scope)):
                     print("$upscope $end", file=self.f)

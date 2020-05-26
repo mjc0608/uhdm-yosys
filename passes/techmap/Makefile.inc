@@ -8,9 +8,12 @@ OBJS += passes/techmap/libparse.o
 ifeq ($(ENABLE_ABC),1)
 OBJS += passes/techmap/abc.o
 OBJS += passes/techmap/abc9.o
+OBJS += passes/techmap/abc9_exe.o
+OBJS += passes/techmap/abc9_ops.o
 ifneq ($(ABCEXTERNAL),)
 passes/techmap/abc.o: CXXFLAGS += -DABCEXTERNAL='"$(ABCEXTERNAL)"'
 passes/techmap/abc9.o: CXXFLAGS += -DABCEXTERNAL='"$(ABCEXTERNAL)"'
+passes/techmap/abc9_exe.o: CXXFLAGS += -DABCEXTERNAL='"$(ABCEXTERNAL)"'
 endif
 endif
 
@@ -31,7 +34,6 @@ OBJS += passes/techmap/aigmap.o
 OBJS += passes/techmap/tribuf.o
 OBJS += passes/techmap/lut2mux.o
 OBJS += passes/techmap/nlutmap.o
-OBJS += passes/techmap/dffsr2dff.o
 OBJS += passes/techmap/shregmap.o
 OBJS += passes/techmap/deminout.o
 OBJS += passes/techmap/insbuf.o
@@ -55,11 +57,11 @@ passes/techmap/techmap.inc: techlibs/common/techmap.v
 
 passes/techmap/techmap.o: passes/techmap/techmap.inc
 
-ifneq ($(CONFIG),emcc)
-TARGETS += yosys-filterlib$(EXE)
+ifeq ($(DISABLE_SPAWN),0)
+TARGETS += $(PROGRAM_PREFIX)yosys-filterlib$(EXE)
 EXTRA_OBJS += passes/techmap/filterlib.o
 
-yosys-filterlib$(EXE): passes/techmap/filterlib.o
+$(PROGRAM_PREFIX)yosys-filterlib$(EXE): passes/techmap/filterlib.o
 	$(Q) mkdir -p $(dir $@)
-	$(P) $(LD) -o yosys-filterlib$(EXE) $(LDFLAGS) $^ $(LDLIBS)
+	$(P) $(LD) -o $(PROGRAM_PREFIX)yosys-filterlib$(EXE) $(LDFLAGS) $^ $(LDLIBS)
 endif

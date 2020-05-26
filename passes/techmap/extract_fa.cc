@@ -262,10 +262,14 @@ struct ExtractFaWorker
 			pool<SigBit> new_leaves = leaves;
 
 			new_leaves.erase(bit);
-			if (cell->hasPort(ID::A)) new_leaves.insert(sigmap(SigBit(cell->getPort(ID::A))));
-			if (cell->hasPort(ID::B)) new_leaves.insert(sigmap(SigBit(cell->getPort(ID::B))));
-			if (cell->hasPort(ID(C))) new_leaves.insert(sigmap(SigBit(cell->getPort(ID(C)))));
-			if (cell->hasPort(ID(D))) new_leaves.insert(sigmap(SigBit(cell->getPort(ID(D)))));
+			for (auto port : {ID::A, ID::B, ID::C, ID::D}) {
+				if (!cell->hasPort(port))
+					continue;
+				auto bit = sigmap(SigBit(cell->getPort(port)));
+				if (!bit.wire)
+					continue;
+				new_leaves.insert(bit);
+			}
 
 			if (GetSize(new_leaves) > maxbreadth)
 				continue;
@@ -391,18 +395,18 @@ struct ExtractFaWorker
 				else
 				{
 					Cell *cell = module->addCell(NEW_ID, ID($fa));
-					cell->setParam(ID(WIDTH), 1);
+					cell->setParam(ID::WIDTH, 1);
 
 					log("      Created $fa cell %s.\n", log_id(cell));
 
 					cell->setPort(ID::A, f3i.inv_a ? module->NotGate(NEW_ID, A) : A);
 					cell->setPort(ID::B, f3i.inv_b ? module->NotGate(NEW_ID, B) : B);
-					cell->setPort(ID(C), f3i.inv_c ? module->NotGate(NEW_ID, C) : C);
+					cell->setPort(ID::C, f3i.inv_c ? module->NotGate(NEW_ID, C) : C);
 
 					X = module->addWire(NEW_ID);
 					Y = module->addWire(NEW_ID);
 
-					cell->setPort(ID(X), X);
+					cell->setPort(ID::X, X);
 					cell->setPort(ID::Y, Y);
 
 					facache[fakey] = make_tuple(X, Y, cell);
@@ -497,18 +501,18 @@ struct ExtractFaWorker
 				else
 				{
 					Cell *cell = module->addCell(NEW_ID, ID($fa));
-					cell->setParam(ID(WIDTH), 1);
+					cell->setParam(ID::WIDTH, 1);
 
 					log("      Created $fa cell %s.\n", log_id(cell));
 
 					cell->setPort(ID::A, f2i.inv_a ? module->NotGate(NEW_ID, A) : A);
 					cell->setPort(ID::B, f2i.inv_b ? module->NotGate(NEW_ID, B) : B);
-					cell->setPort(ID(C), State::S0);
+					cell->setPort(ID::C, State::S0);
 
 					X = module->addWire(NEW_ID);
 					Y = module->addWire(NEW_ID);
 
-					cell->setPort(ID(X), X);
+					cell->setPort(ID::X, X);
 					cell->setPort(ID::Y, Y);
 				}
 

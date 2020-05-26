@@ -68,11 +68,14 @@ namespace AST
 		AST_LIVE,
 		AST_FAIR,
 		AST_COVER,
+		AST_ENUM,
+		AST_ENUM_ITEM,
 
 		AST_FCALL,
 		AST_TO_BITS,
 		AST_TO_SIGNED,
 		AST_TO_UNSIGNED,
+		AST_SELFSZ,
 		AST_CONCAT,
 		AST_REPLICATE,
 		AST_BIT_NOT,
@@ -89,6 +92,8 @@ namespace AST
 		AST_SHIFT_RIGHT,
 		AST_SHIFT_SLEFT,
 		AST_SHIFT_SRIGHT,
+		AST_SHIFTX,
+		AST_SHIFT,
 		AST_LT,
 		AST_LE,
 		AST_EQ,
@@ -148,7 +153,17 @@ namespace AST
 		AST_INTERFACEPORTTYPE,
 		AST_MODPORT,
 		AST_MODPORTMEMBER,
-		AST_PACKAGE
+		AST_PACKAGE,
+
+		AST_WIRETYPE,
+		AST_TYPEDEF
+	};
+
+	struct AstSrcLocType {
+		unsigned int first_line, last_line;
+		unsigned int first_column, last_column;
+		AstSrcLocType() : first_line(0), last_line(0), first_column(0), last_column(0) {}
+		AstSrcLocType(int _first_line, int _first_column, int _last_line, int _last_column) : first_line(_first_line), last_line(_last_line), first_column(_first_column), last_column(_last_column) {}
 	};
 
 	// convert an node type to a string (e.g. for debug output)
@@ -174,10 +189,12 @@ namespace AST
 		// node content - most of it is unused in most node types
 		std::string str;
 		std::vector<RTLIL::State> bits;
-		bool is_input, is_output, is_reg, is_logic, is_signed, is_string, is_wand, is_wor, range_valid, range_swapped, was_checked, is_unsized;
+		bool is_input, is_output, is_reg, is_logic, is_signed, is_string, is_wand, is_wor, range_valid, range_swapped, was_checked, is_unsized, is_custom_type;
 		int port_id, range_left, range_right;
 		uint32_t integer;
 		double realvalue;
+		// set for IDs typed to an enumeration, not used
+		bool is_enum;
 
 		// if this is a multirange memory then this vector contains offset and length of each dimension
 		std::vector<int> multirange_dimensions;
@@ -188,11 +205,14 @@ namespace AST
 		// this is used by simplify to detect if basic analysis has been performed already on the node
 		bool basic_prep;
 
+		// this is used for ID references in RHS expressions that should use the "new" value for non-blocking assignments
+		bool lookahead;
+
 		// this is the original sourcecode location that resulted in this AST node
 		// it is automatically set by the constructor using AST::current_filename and
 		// the AST::get_line_num() callback function.
 		std::string filename;
-		int linenum;
+		AstSrcLocType location;
 
 		// creating and deleting nodes
 		AstNode(AstNodeType type = AST_NONE, AstNode *child1 = NULL, AstNode *child2 = NULL, AstNode *child3 = NULL);
@@ -241,6 +261,7 @@ namespace AST
 		void replace_variables(std::map<std::string, varinfo_t> &variables, AstNode *fcall);
 		AstNode *eval_const_function(AstNode *fcall);
 		bool is_simple_const_expr();
+		std::string process_format_str(const std::string &sformat, int next_arg, int stage, int width_hint, bool sign_hint);
 
 		// create a human-readable text representation of the AST (for debugging)
 		void dumpAst(FILE *f, std::string indent) const;
@@ -283,6 +304,9 @@ namespace AST
 		int isConst() const; // return '1' for AST_CONSTANT and '2' for AST_REALVALUE
 		double asReal(bool is_signed);
 		RTLIL::Const realAsConst(int width);
+
+		// helpers for enum
+		void allocateDefaultEnumValues();
 	};
 
 	// process an AST tree (ast must point to an AST_DESIGN node) and generate RTLIL code
@@ -295,10 +319,10 @@ namespace AST
 		AstNode *ast;
 		bool nolatches, nomeminit, nomem2reg, mem2reg, noblackbox, lib, nowb, noopt, icells, pwires, autowire;
 		~AstModule() YS_OVERRIDE;
-		RTLIL::IdString derive(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Const> parameters, bool mayfail) YS_OVERRIDE;
-		RTLIL::IdString derive(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Const> parameters, dict<RTLIL::IdString, RTLIL::Module*> interfaces, dict<RTLIL::IdString, RTLIL::IdString> modports, dict<RTLIL::IdString, RTLIL::Wire*> wires, bool mayfail) YS_OVERRIDE;
-		std::string derive_common(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Const> parameters, AstNode **new_ast_out);
-		void reprocess_module(RTLIL::Design *design, dict<RTLIL::IdString, RTLIL::Module *> local_interfaces) YS_OVERRIDE;
+		RTLIL::IdString derive(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Const> &parameters, bool mayfail) YS_OVERRIDE;
+		RTLIL::IdString derive(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Const> &parameters, const dict<RTLIL::IdString, RTLIL::Module*> &interfaces, const dict<RTLIL::IdString, RTLIL::IdString> &modports, dict<RTLIL::IdString, RTLIL::Wire*> wires, bool mayfail) YS_OVERRIDE;
+		std::string derive_common(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Const> &parameters, AstNode **new_ast_out, bool quiet = false);
+		void reprocess_module(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Module *> &local_interfaces) YS_OVERRIDE;
 		RTLIL::Module *clone() const YS_OVERRIDE;
 		void loadconfig() const;
 	};
@@ -335,6 +359,7 @@ namespace AST_INTERNAL
 	extern AST::AstNode *current_always, *current_top_block, *current_block, *current_block_child;
 	extern AST::AstModule *current_module;
 	extern bool current_always_clocked;
+	struct LookaheadRewriter;
 	struct ProcessGenerator;
 }
 

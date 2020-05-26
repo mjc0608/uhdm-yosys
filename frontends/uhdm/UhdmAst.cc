@@ -123,7 +123,7 @@ AST::AstNode* UhdmAst::visit_object (
 		current_node->str = objectName;
 	}
 	if (unsigned int l = vpi_get(vpiLineNo, obj_h)) {
-		current_node->linenum = l;
+		current_node->location.first_line = current_node->location.last_line = l;
 	}
 
 	const unsigned int objectType = vpi_get(vpiType, obj_h);
