@@ -177,6 +177,11 @@ module mux4x0(output Q, input S0, S1, A, B, C, D);
     assign Q = S1 ? (S0 ? D : C) : (S0 ? B : A);
 endmodule
 
+//                  CZ       TSL TAB TBSTA1TA2TB1TB2BA1BA2BB1BB2 
+module mux8x0(output Q, input S0, S1, S2, A, B, C, D, E, F, G, H);
+    assign Q = S2 ? (S1 ? (S0 ? H : G) : (S0 ? F : E)) : (S1 ? (S0 ? D : C) : (S0 ? B : A));
+endmodule
+
 // S0 BSL TSL
 // S1 BAB TAB
 // S2 TBS
