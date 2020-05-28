@@ -172,11 +172,6 @@ module mux2x0(output Q, input S, A, B);
     assign Q = S ? B : A;
 endmodule
 
-//                  FZ       FS F1 F2
-module mux2x1(output Q, input S, A, B);
-    assign Q = S ? B : A;
-endmodule
-
 //                  TZ       TSL TABTA1TA2TB1TB2 
 module mux4x0(output Q, input S0, S1, A, B, C, D);
     assign Q = S1 ? (S0 ? D : C) : (S0 ? B : A);
