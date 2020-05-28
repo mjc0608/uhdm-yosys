@@ -110,7 +110,8 @@ struct SynthQuickLogicPass : public ScriptPass
             run("opt_clean");
             run("check");
             run("techmap");
-            run("abc -lut 1:4");
+            run("muxcover");
+            run("abc -lut 1:4 -g MUX");
             run("opt_clean");
             run("check");
         }
