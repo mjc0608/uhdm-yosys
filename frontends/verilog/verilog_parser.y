@@ -3128,6 +3128,9 @@ basic_expr:
 		$$ = new AstNode(AST_LOGIC_NOT, $3);
 		SET_AST_NODE_LOC($$, @1, @3);
 		append_attr($$, $2);
+	} |
+	TOK_PKG_USER_TYPE '\'' '(' basic_expr ')' {
+		$$ = $4;
 	};
 
 concat_list:
