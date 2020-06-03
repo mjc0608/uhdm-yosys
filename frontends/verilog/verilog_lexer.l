@@ -547,6 +547,8 @@ import[ \t\r\n]+[a-zA-Z_$][a-zA-Z0-9_$]*[ \t\r\n]*"::"[ \t\r\n]*"*"[ \t\r\n]*";"
 
 ".*" { return TOK_WILDCARD_CONNECT; }
 
+"|=" { return TOK_OR_ASSIGN; }
+
 [-+]?[=*]> {
 	if (!specify_mode) REJECT;
 	yylval->string = new std::string(yytext);

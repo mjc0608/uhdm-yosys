@@ -299,7 +299,7 @@ static void addGenvar() {
 %token TOK_INTEGER TOK_SIGNED TOK_ASSIGN TOK_ALWAYS TOK_INITIAL
 %token TOK_ALWAYS_FF TOK_ALWAYS_COMB TOK_ALWAYS_LATCH
 %token TOK_BEGIN TOK_END TOK_IF TOK_ELSE TOK_FOR TOK_WHILE TOK_REPEAT
-%token TOK_DPI_FUNCTION TOK_POSEDGE TOK_NEGEDGE TOK_OR TOK_AUTOMATIC
+%token TOK_DPI_FUNCTION TOK_POSEDGE TOK_NEGEDGE TOK_OR TOK_OR_ASSIGN TOK_AUTOMATIC
 %token TOK_CASE TOK_CASEX TOK_CASEZ TOK_ENDCASE TOK_DEFAULT
 %token TOK_FUNCTION TOK_ENDFUNCTION TOK_TASK TOK_ENDTASK TOK_SPECIFY
 %token TOK_IGNORED_SPECIFY TOK_ENDSPECIFY TOK_SPECPARAM TOK_SPECIFY_AND TOK_IGNORED_SPECIFY_AND
@@ -2448,6 +2448,12 @@ simple_behavioral_stmt:
 		AstNode *node = new AstNode(AST_ASSIGN_LE, $2, $5);
 		ast_stack.back()->children.push_back(node);
 		SET_AST_NODE_LOC(node, @2, @5);
+		append_attr(node, $1);
+	} |
+	attr lvalue TOK_OR_ASSIGN delay expr {
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, new AstNode(AST_LOGIC_OR, $2->clone(), $5));
+		SET_AST_NODE_LOC(node, @2, @5);
+		ast_stack.back()->children.push_back(node);
 		append_attr(node, $1);
 	};
 
