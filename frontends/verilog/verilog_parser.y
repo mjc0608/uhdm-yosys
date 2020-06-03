@@ -2451,7 +2451,7 @@ simple_behavioral_stmt:
 		append_attr(node, $1);
 	} |
 	attr lvalue TOK_OR_ASSIGN delay expr {
-		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, new AstNode(AST_LOGIC_OR, $2->clone(), $5));
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, new AstNode(AST_BIT_OR, $2->clone(), $5));
 		SET_AST_NODE_LOC(node, @2, @5);
 		ast_stack.back()->children.push_back(node);
 		append_attr(node, $1);
