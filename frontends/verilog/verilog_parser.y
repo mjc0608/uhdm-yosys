@@ -3172,6 +3172,9 @@ basic_expr:
 	} |
 	TOK_PKG_USER_TYPE '\'' '(' basic_expr ')' {
 		$$ = $4;
+	} |
+	basic_expr '\'' '(' basic_expr ')' {
+		$$ = $4;
 	};
 
 concat_list:
