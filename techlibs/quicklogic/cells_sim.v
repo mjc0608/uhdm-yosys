@@ -2463,8 +2463,6 @@ input IQR;
 input WPD;
 inout IP;
 
-//pragma synthesis_off
-
 reg EN_reg, OQ_reg, IQZ;
 wire AND_OUT;
 
@@ -2501,10 +2499,6 @@ assign EN = ESEL ? IE : EN_reg ;
 assign OQ = OSEL ? OQI : OQ_reg ;  
 
 assign IP = EN ? OQ : 1'bz;
-
-
-assign (highz1,pull0) IP = WPD ? 1'b0 : 1'b1;
-//pragma synthesis_on
 
 endmodule
 
