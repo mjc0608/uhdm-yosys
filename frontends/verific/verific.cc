@@ -974,6 +974,7 @@ void VerificImporter::import_netlist(RTLIL::Design *design, Netlist *nl, std::se
 			module->memories[memory->name] = memory;
 
 			int number_of_bits = net->Size();
+			number_of_bits = 1 << ceil_log2(number_of_bits);
 			int bits_in_word = number_of_bits;
 			FOREACH_PORTREF_OF_NET(net, si, pr) {
 				if (pr->GetInst()->Type() == OPER_READ_PORT) {
@@ -1261,12 +1262,12 @@ void VerificImporter::import_netlist(RTLIL::Design *design, Netlist *nl, std::se
 
 		if (inst->Type() == OPER_READ_PORT)
 		{
-			RTLIL::Memory *memory = module->memories.at(RTLIL::escape_id(inst->GetInput()->Name()));
+			RTLIL::Memory *memory = module->memories.at(RTLIL::escape_id(inst->GetInput()->Name()), nullptr);
+			if (!memory)
+				log_error("Memory net '%s' missing, possibly no driver, use verific -flatten.\n", inst->GetInput()->Name());
+
 			int numchunks = int(inst->OutputSize()) / memory->width;
 			int chunksbits = ceil_log2(numchunks);
-
-			if ((numchunks * memory->width) != int(inst->OutputSize()) || (numchunks & (numchunks - 1)) != 0)
-				log_error("Import of asymmetric memories of this type is not supported yet: %s %s\n", inst->Name(), inst->GetInput()->Name());
 
 			for (int i = 0; i < numchunks; i++)
 			{
@@ -1291,12 +1292,11 @@ void VerificImporter::import_netlist(RTLIL::Design *design, Netlist *nl, std::se
 
 		if (inst->Type() == OPER_WRITE_PORT || inst->Type() == OPER_CLOCKED_WRITE_PORT)
 		{
-			RTLIL::Memory *memory = module->memories.at(RTLIL::escape_id(inst->GetOutput()->Name()));
+			RTLIL::Memory *memory = module->memories.at(RTLIL::escape_id(inst->GetOutput()->Name()), nullptr);
+			if (!memory)
+				log_error("Memory net '%s' missing, possibly no driver, use verific -flatten.\n", inst->GetInput()->Name());
 			int numchunks = int(inst->Input2Size()) / memory->width;
 			int chunksbits = ceil_log2(numchunks);
-
-			if ((numchunks * memory->width) != int(inst->Input2Size()) || (numchunks & (numchunks - 1)) != 0)
-				log_error("Import of asymmetric memories of this type is not supported yet: %s %s\n", inst->Name(), inst->GetOutput()->Name());
 
 			for (int i = 0; i < numchunks; i++)
 			{
@@ -2179,6 +2179,9 @@ struct VerificPass : public Pass {
 
 			RuntimeFlags::SetVar("vhdl_support_variable_slice", 1);
 			RuntimeFlags::SetVar("vhdl_ignore_assertion_statements", 0);
+
+			RuntimeFlags::SetVar("veri_preserve_assignments", 1);
+			RuntimeFlags::SetVar("vhdl_preserve_assignments", 1);
 
 			// Workaround for VIPER #13851
 			RuntimeFlags::SetVar("veri_create_name_for_unnamed_gen_block", 1);

@@ -991,6 +991,8 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 	case AST_MODPORT:
 	case AST_MODPORTMEMBER:
 	case AST_TYPEDEF:
+	case AST_STRUCT:
+	case AST_UNION:
 		break;
 	case AST_INTERFACEPORT: {
 		// If a port in a module with unknown type is found, mark it with the attribute 'is_interface'
@@ -1055,7 +1057,7 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 			if (!range_valid)
 				log_file_error(filename, location.first_line, "Signal `%s' with non-constant width!\n", str.c_str());
 
-			if (!(range_left >= range_right || (range_left == -1 && range_right == 0)))
+			if (!(range_left + 1 >= range_right))
 				log_file_error(filename, location.first_line, "Signal `%s' with invalid width range %d!\n", str.c_str(), range_left - range_right + 1);
 
 			RTLIL::Wire *wire = current_module->addWire(str, range_left - range_right + 1);
@@ -1065,6 +1067,7 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 			wire->port_input = is_input;
 			wire->port_output = is_output;
 			wire->upto = range_swapped;
+			wire->is_signed = is_signed;
 
 			for (auto &attr : attributes) {
 				if (attr.second->type != AST_CONSTANT)
