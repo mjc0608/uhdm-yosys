@@ -26,6 +26,7 @@ passes/opt/opt_lut.cc          @whitequark
 # accidentally disable any of the above rules.
 
 techlibs/intel_alm/            @ZirconiumX
+techlibs/quicklogic/           @kgugala
 
 # pyosys
 misc/*.py                      @btut
