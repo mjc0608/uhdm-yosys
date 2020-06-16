@@ -275,7 +275,7 @@ static void rewriteAsMemoryNode(AstNode *node, AstNode *rangeNode)
 %token TOK_OR_ASSIGN TOK_XOR_ASSIGN TOK_AND_ASSIGN TOK_SUB_ASSIGN
 
 %type <ast> range range_or_multirange  non_opt_range non_opt_multirange range_or_signed_int
-%type <ast> wire_type expr basic_expr concat_list rvalue lvalue lvalue_concat_list
+%type <ast> wire_type expr basic_expr concat_list rvalue lvalue lvalue_concat_list assigment_pattern
 %type <string> opt_label opt_sva_label tok_prim_wrapper hierarchical_id hierarchical_type_id integral_number
 %type <string> type_name
 %type <ast> opt_enum_init enum_type struct_type non_wire_data_type
@@ -2310,10 +2310,25 @@ assert_property:
 
 simple_behavioral_stmt:
 	attr lvalue '=' delay expr {
-		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, $5);
-		ast_stack.back()->children.push_back(node);
-		SET_AST_NODE_LOC(node, @2, @5);
-		append_attr(node, $1);
+		if($5->type == AST_BLOCK) { //struct assigment list
+			for (auto *child : $5->children) {
+				if (child->children[0]->str.compare(0, 1, "\\") == 0)
+					child->children[0]->str = child->children[0]->str.substr(1);
+				if(child->children[0]->str != "")
+					child->children[0]->str = $2->str + "." + child->children[0]->str;
+				else
+					child->children[0]->str = $2->str;
+				log("Child name: %s\n", child->children[0]->str.c_str());
+				child->type = AST_ASSIGN_EQ;
+				ast_stack.back()->children.push_back(child);
+				SET_AST_NODE_LOC(child, @2, @5);
+			}
+		} else {
+			AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, $5);
+			ast_stack.back()->children.push_back(node);
+			SET_AST_NODE_LOC(node, @2, @5);
+			append_attr(node, $1);
+		}
 	} |
 	attr lvalue TOK_INCREMENT {
 		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, new AstNode(AST_ADD, $2->clone(), AstNode::mkconst_int(1, true)));
@@ -2328,10 +2343,24 @@ simple_behavioral_stmt:
 		append_attr(node, $1);
 	} |
 	attr lvalue OP_LE delay expr {
-		AstNode *node = new AstNode(AST_ASSIGN_LE, $2, $5);
-		ast_stack.back()->children.push_back(node);
-		SET_AST_NODE_LOC(node, @2, @5);
-		append_attr(node, $1);
+		if($5->type == AST_BLOCK) { //struct assigment list
+			for (auto *child : $5->children) {
+				if (child->children[0]->str.compare(0, 1, "\\") == 0)
+					child->children[0]->str = child->children[0]->str.substr(1);
+				if(child->children[0]->str != "")
+					child->children[0]->str = $2->str + "." + child->children[0]->str;
+				else
+					child->children[0]->str = $2->str;
+				child->type = AST_ASSIGN_LE;
+				ast_stack.back()->children.push_back(child);
+				SET_AST_NODE_LOC(child, @2, @5);
+			}
+		} else {
+			AstNode *node = new AstNode(AST_ASSIGN_LE, $2, $5);
+			ast_stack.back()->children.push_back(node);
+			SET_AST_NODE_LOC(node, @2, @5);
+			append_attr(node, $1);
+		}
 	} |
 	attr lvalue TOK_XOR_ASSIGN delay expr {
 		AstNode *xor_node = new AstNode(AST_BIT_XOR, $2->clone(), $5);
@@ -2372,34 +2401,7 @@ simple_behavioral_stmt:
 		SET_AST_NODE_LOC(and_node, @2, @5);
 		ast_stack.back()->children.push_back(node);
 		append_attr(node, $1);
-	} |
-	start_assigment_patter assigment_pattern '}';
-
-start_assigment_patter:
-	attr lvalue '=' delay '\'' '{' {
-		current_assign_pattern_name = $2->str;
-	} |
-	attr lvalue OP_LE delay '\'' '{' {
-		current_assign_pattern_name = $2->str;
 	};
-
-assigment_pattern:
-	lvalue ':' expr {
-		AstNode *lval = $1->clone();
-		if (lval->str.compare(0, 1, "\\") == 0)
-			lval->str = current_assign_pattern_name + "." + lval->str.substr(1);
-		AstNode *node = new AstNode(AST_ASSIGN_EQ, lval, $3);
-		SET_AST_NODE_LOC(node, @1, @3);
-		ast_stack.back()->children.push_back(node);
-	} |
-	TOK_DEFAULT ':' expr { /* only supports packed structs, treating struct as vector and assigning default value before other values */
-		AstNode *lval = new AstNode(AST_IDENTIFIER);
-		lval->str = current_assign_pattern_name;
-		AstNode *node = new AstNode(AST_ASSIGN_EQ, lval, $3);
-		SET_AST_NODE_LOC(node, @1, @3);
-		ast_stack.back()->children.insert(ast_stack.back()->children.begin(), node);
-	} |
-	assigment_pattern ',' assigment_pattern;
 
 // this production creates the obligatory if-else shift/reduce conflict
 behavioral_stmt:
@@ -2881,6 +2883,9 @@ basic_expr:
 	'{' concat_list '}' {
 		$$ = $2;
 	} |
+	'\'' '{' assigment_pattern '}' {
+		$$ = $3;
+	} |
 	'{' expr '{' concat_list '}' '}' {
 		$$ = new AstNode(AST_REPLICATE, $2, $4);
 	} |
@@ -3093,6 +3098,34 @@ concat_list:
 	expr ',' concat_list {
 		$$ = $3;
 		$$->children.push_back($1);
+	};
+
+assigment_pattern:
+	lvalue ':' expr {
+		AstNode *lval = $1->clone();
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, lval, $3);
+		SET_AST_NODE_LOC(node, @1, @3);
+		$$ = new AstNode(AST_BLOCK, node);
+	} |
+	TOK_DEFAULT ':' expr { /* only supports packed structs, treating struct as vector and assigning default value before other values */
+		AstNode *lval = new AstNode(AST_IDENTIFIER);
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, lval, $3);
+		SET_AST_NODE_LOC(node, @1, @3);
+		$$ = new AstNode(AST_BLOCK, node);
+	} |
+	lvalue ':' expr ',' assigment_pattern {
+		AstNode *lval = $1->clone();
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, lval, $3);
+		SET_AST_NODE_LOC(node, @1, @3);
+		$$ = $5;
+		$$->children.push_back(node);
+	} |
+	TOK_DEFAULT ':' expr ',' assigment_pattern {
+		AstNode *lval = new AstNode(AST_IDENTIFIER);
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, lval, $3);
+		SET_AST_NODE_LOC(node, @1, @3);
+		$$ = $5;
+		$$->children.insert($$->children.begin(), node);
 	};
 
 integral_number:
