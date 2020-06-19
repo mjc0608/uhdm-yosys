@@ -198,19 +198,37 @@ module mux8x0(output Q, input S0, S1, S2, A, B, C, D, E, F, G, H);
     assign Q = S2 ? (S1 ? (S0 ? H : G) : (S0 ? F : E)) : (S1 ? (S0 ? D : C) : (S0 ? B : A));
 endmodule
 
-module inpad(output Q, input P);
+module inpad(Q, P);
+    output Q;
+    (* iopad_external_pin *)
+    input  P;
+
     assign Q = P;
 endmodule
 
-module outpad(output P, input A);
+module outpad(P, A);
+    (* iopad_external_pin *)
+    output P;
+    input  A;
+
     assign P = A;
 endmodule
 
-module ckpad(output Q, input P);
+module ckpad(Q, P);
+    output Q;
+    (* iopad_external_pin *)
+    input  P;
+
     assign Q = P;
 endmodule
 
-module bipad(input A, input EN, output Q, inout P);
+module bipad(A, EN, Q, P);
+    input  A;
+    input  EN;
+    output Q;
+    (* iopad_external_pin *)
+    inout  P;
+
     assign Q = P;
     assign P = EN ? A : 1'bz;
 endmodule
@@ -221,6 +239,14 @@ endmodule
 
 module logic_1(output a);
     assign a = 1;
+endmodule
+
+module gclkbuff (A, Z);
+    input  A;
+    (* clkbuf_driver *)
+    output Z;
+
+    assign Z = A;
 endmodule
 
 module logic_cell_macro(
@@ -237,12 +263,15 @@ module logic_cell_macro(
     input F1,
     input F2,
     input FS,
+    (* clkbuf_sink *)
     input QCK,
     input QCKS,
     input QDI,
     input QDS,
     input QEN,
+    (* clkbuf_sink *)
     input QRT,
+    (* clkbuf_sink *)
     input QST,
     input TA1,
     input TA2,
@@ -371,11 +400,6 @@ module qlal4s3b_cell_macro(
 endmodule /* qlal4s3b_cell_macro */
 
 (* blackbox *)
-module gclkbuff (input A, output Z);
-
-endmodule
-
-(* blackbox *)
 module ram8k_2x1_cell_macro (
     input [10:0] A1_0,
     input [10:0] A1_1,
@@ -413,8 +437,21 @@ module ram8k_2x1_cell_macro (
 endmodule /* ram8k_2x1_cell_macro */
 
 module gpio_cell_macro (
-    input DS, ESEL, FIXHOLD, IE, INEN, IQC, IQCS, IQE, IQR, OQE, OQI, OSEL, WPD,
-    inout IP,
+    input  DS,
+    input  ESEL,
+    input  FIXHOLD,
+    input  IE,
+    input  INEN,
+    (* clkbuf_sink *)
+    input  IQC,
+    input  IQCS,
+    input  IQE,
+    input  IQR,
+    input  OQE,
+    input  OQI,
+    input  OSEL,
+    input  WPD,
+    inout  IP,
     output IZ);
 
     assign IZ = INEN ? IP : 1'b0;

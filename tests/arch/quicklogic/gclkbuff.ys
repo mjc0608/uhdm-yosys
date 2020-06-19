@@ -1,0 +1,25 @@
+read_verilog v/gclkbuff.v
+design -save read
+
+# Clock buffer inference enabled (the default)
+synth_quicklogic -top top
+stat
+cd top
+select -assert-count 2 t:ckpad
+select -assert-count 4 t:inpad
+select -assert-count 2 t:outpad
+select -assert-count 2 t:gclkbuff
+select -assert-count 2 t:dffc
+select -assert-count 12 t:*
+
+# Clock buffer inference disabled.
+design -load read
+synth_quicklogic -top top -noclkbuf
+stat
+cd top
+select -assert-count 2 t:ckpad
+select -assert-count 4 t:inpad
+select -assert-count 2 t:outpad
+select -assert-count 2 t:dffc
+select -assert-count 10 t:*
+

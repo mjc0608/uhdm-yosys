@@ -18,6 +18,9 @@ struct SynthQuickLogicPass : public ScriptPass
         log("\n");
         log("    -top <module>\n");
         log("         use the specified module as top module\n");
+		log("\n");
+		log("    -noclkbuf\n");
+		log("        disable automatic clock buffer insertion\n");
         log("\n");
         log("    -edif <file>\n");
         log("        write the design to the specified edif file. writing of an output file\n");
@@ -35,12 +38,14 @@ struct SynthQuickLogicPass : public ScriptPass
     std::string edif_file = "";
     std::string blif_file = "";
     std::string currmodule = "";
+    bool noclkbuf;
 
     void clear_flags() YS_OVERRIDE
     {
         top_opt = "-auto-top";
         edif_file.clear();
         blif_file.clear();
+        noclkbuf = false;
     }
 
     void execute(std::vector<std::string> args, RTLIL::Design *design) YS_OVERRIDE
@@ -55,6 +60,10 @@ struct SynthQuickLogicPass : public ScriptPass
                 top_opt = "-top " + args[++argidx];
                 continue;
             }
+			if (args[argidx] == "-noclkbuf") {
+				noclkbuf = true;
+				continue;
+			}
             if (args[argidx] == "-edif" && argidx+1 < args.size()) {
                 edif_file = args[++argidx];
                 continue;
@@ -113,7 +122,11 @@ struct SynthQuickLogicPass : public ScriptPass
         }
 
         if (check_label("iomap")) {
-            run("clkbufmap -buf $_BUF_ Y:A -inpad ckpad Q:P");
+            if (help_mode || !noclkbuf) {
+                run("clkbufmap -buf gclkbuff Z:A -inpad ckpad Q:P", "(skip if '-noclkbuf')");
+            } else {
+                run("clkbufmap -buf $_BUF_ Y:A -inpad ckpad Q:P", "(only when '-noclkbuf')");
+            }
             run("iopadmap -bits -outpad outpad A:P -inpad inpad Q:P -tinoutpad bipad EN:Q:A:P -ignore ckpad P A:top");
         }
 
