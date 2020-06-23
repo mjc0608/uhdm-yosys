@@ -548,6 +548,7 @@ import[ \t\r\n]+[a-zA-Z_$][a-zA-Z0-9_$]*[ \t\r\n]*"::"[ \t\r\n]*"*"[ \t\r\n]*";"
 
 ".*" { return TOK_WILDCARD_CONNECT; }
 
+"^=" { return TOK_XOR_ASSIGN; }
 "|=" { return TOK_OR_ASSIGN; }
 "+=" { return TOK_PLUS_ASSIGN; }
 
