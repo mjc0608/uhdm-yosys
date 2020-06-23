@@ -182,22 +182,6 @@ module mux8x0(output Q, input S0, S1, S2, A, B, C, D, E, F, G, H);
     assign Q = S2 ? (S1 ? (S0 ? H : G) : (S0 ? F : E)) : (S1 ? (S0 ? D : C) : (S0 ? B : A));
 endmodule
 
-// S0 BSL TSL
-// S1 BAB TAB
-// S2 TBS
-// A TA1
-// B TA2
-// C TB1
-// D TB2
-// E BA1
-// F BA2
-// G BB1
-// H BB2
-// Q CZ
-module mux8x0(output Q, input S0, S1, S2, A, B, C, D, E, F, G, H);
-    assign Q = S2 ? (S1 ? (S0 ? H : G) : (S0 ? F : E)) : (S1 ? (S0 ? D : C) : (S0 ? B : A));
-endmodule
-
 module inpad(output Q, input P);
     assign Q = P;
 endmodule
