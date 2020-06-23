@@ -318,6 +318,7 @@ static void addGenvar() {
 %token TOK_RAND TOK_CONST TOK_CHECKER TOK_ENDCHECKER TOK_EVENTUALLY
 %token TOK_INCREMENT TOK_DECREMENT TOK_UNIQUE TOK_PRIORITY
 %token TOK_STRUCT TOK_PACKED TOK_UNSIGNED TOK_INT TOK_BYTE TOK_SHORTINT TOK_UNION TOK_INSIDE
+%token TOK_RETURN
 
 %type <ast> range range_or_multirange  non_opt_range non_opt_multirange range_or_signed_int
 %type <ast> wire_type expr basic_expr concat_list rvalue lvalue lvalue_concat_list assigment_pattern
@@ -650,6 +651,7 @@ package_body_stmt:
 	  typedef_decl
 	| localparam_decl
 	| param_decl
+	| task_func_decl
 	;
 
 interface:
@@ -818,6 +820,7 @@ range_or_multirange:
 range_or_signed_int:
 	  range 		{ $$ = $1; }
 	| TOK_INTEGER		{ $$ = makeRange(); }
+	| TOK_LOGIC range { $$ = $2; } // FIXME: set is_logic or sth
 	;
 
 module_body:
@@ -913,7 +916,7 @@ task_func_decl:
 		current_function_or_task->children.push_back(outreg);
 		current_function_or_task_port_id = 1;
 		delete $6;
-	} task_func_args_opt ';' task_func_body TOK_ENDFUNCTION {
+	} task_func_args_opt ';' task_func_body TOK_ENDFUNCTION opt_label {
 		current_function_or_task = NULL;
 		ast_stack.pop_back();
 	};
@@ -967,7 +970,7 @@ task_func_args:
 	task_func_port | task_func_args ',' task_func_port;
 
 task_func_port:
-	attr wire_type range {
+	attr wire_type range_or_multirange {
 		if (albuf) {
 			delete astbuf1;
 			if (astbuf2 != NULL)
@@ -2675,6 +2678,9 @@ behavioral_stmt:
 		SET_AST_NODE_LOC(ast_stack.back(), @2, @9);
 		case_type_stack.pop_back();
 		ast_stack.pop_back();
+	} |
+	TOK_RETURN expr {
+		// FIXME: AST!
 	};
 
 unique_case_attr:
