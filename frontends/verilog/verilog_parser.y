@@ -1477,10 +1477,12 @@ param_range:
 	};
 
 param_logic_range:
-	range {
+	range_or_multirange {
 		if ($1 != NULL) {
 			if (astbuf1->children.size() != 1)
 				frontend_verilog_yyerror("integer/real parameters should not have a range.");
+
+			// FIXME: is_packed = true and stuff
 			astbuf1->children.push_back($1);
 		} else {
 			astbuf1->children.push_back(new AstNode(AST_RANGE));
