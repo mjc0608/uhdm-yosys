@@ -1493,8 +1493,10 @@ param_integer_type: param_integer param_signed
 
 param_integer_vector_type: param_logic_or_reg param_signed param_logic_range
 
+param_range_type: param_signed param_range
+
 param_type:
-	param_integer_type | param_integer_vector_type | param_real | param_range |
+	param_integer_type | param_integer_vector_type | param_real | param_range_type |
 	hierarchical_type_id {
 		astbuf1->is_custom_type = true;
 		astbuf1->children.push_back(new AstNode(AST_WIRETYPE));
