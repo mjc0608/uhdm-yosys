@@ -222,6 +222,7 @@ namespace AST
 		AstNode *clone() const;
 		void cloneInto(AstNode *other) const;
 		void delete_children();
+		AstNode* find_child(AstNodeType type, const std::string& name);
 		~AstNode();
 
 		enum mem2reg_flags
@@ -348,7 +349,6 @@ namespace AST
 
 	// Helper functions related to handling SystemVerilog interfaces
 	std::pair<std::string,std::string> split_modport_from_type(std::string name_type);
-	AstNode * find_modport(AstNode *intf, std::string name);
 	void explode_interface_port(AstNode *module_ast, RTLIL::Module * intfmodule, std::string intfname, AstNode *modport, dict<RTLIL::IdString, RTLIL::Wire*> wires);
 }
 
