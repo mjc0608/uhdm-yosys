@@ -307,7 +307,7 @@ static void addGenvar() {
 %token TOK_INTEGER TOK_SIGNED TOK_ASSIGN TOK_PLUS_ASSIGN TOK_ALWAYS TOK_INITIAL
 %token TOK_ALWAYS_FF TOK_ALWAYS_COMB TOK_ALWAYS_LATCH
 %token TOK_BEGIN TOK_END TOK_IF TOK_ELSE TOK_FOR TOK_WHILE TOK_REPEAT
-%token TOK_DPI_FUNCTION TOK_POSEDGE TOK_NEGEDGE TOK_OR TOK_OR_ASSIGN TOK_AUTOMATIC
+%token TOK_DPI_FUNCTION TOK_POSEDGE TOK_NEGEDGE TOK_OR TOK_OR_ASSIGN TOK_XOR_ASSIGN TOK_AUTOMATIC
 %token TOK_CASE TOK_CASEX TOK_CASEZ TOK_ENDCASE TOK_DEFAULT
 %token TOK_FUNCTION TOK_ENDFUNCTION TOK_TASK TOK_ENDTASK TOK_SPECIFY
 %token TOK_IGNORED_SPECIFY TOK_ENDSPECIFY TOK_SPECPARAM TOK_SPECIFY_AND TOK_IGNORED_SPECIFY_AND
@@ -318,6 +318,9 @@ static void addGenvar() {
 %token TOK_RAND TOK_CONST TOK_CHECKER TOK_ENDCHECKER TOK_EVENTUALLY
 %token TOK_INCREMENT TOK_DECREMENT TOK_UNIQUE TOK_PRIORITY
 %token TOK_STRUCT TOK_PACKED TOK_UNSIGNED TOK_INT TOK_BYTE TOK_SHORTINT TOK_UNION TOK_INSIDE
+%token TOK_RETURN
+%token TOK_STRONG0 TOK_STRONG1 TOK_PULL0 TOK_PULL1
+%token TOK_HIGHZ0 TOK_HIGHZ1 TOK_WEAK0 TOK_WEAK1
 
 %type <ast> range range_or_multirange  non_opt_range non_opt_multirange range_or_signed_int
 %type <ast> wire_type expr basic_expr concat_list rvalue lvalue lvalue_concat_list assigment_pattern
@@ -650,6 +653,7 @@ package_body_stmt:
 	  typedef_decl
 	| localparam_decl
 	| param_decl
+	| task_func_decl
 	;
 
 interface:
@@ -818,6 +822,7 @@ range_or_multirange:
 range_or_signed_int:
 	  range 		{ $$ = $1; }
 	| TOK_INTEGER		{ $$ = makeRange(); }
+	| TOK_LOGIC range { $$ = $2; } // FIXME: set is_logic or sth
 	;
 
 module_body:
@@ -913,7 +918,7 @@ task_func_decl:
 		current_function_or_task->children.push_back(outreg);
 		current_function_or_task_port_id = 1;
 		delete $6;
-	} task_func_args_opt ';' task_func_body TOK_ENDFUNCTION {
+	} task_func_args_opt ';' task_func_body TOK_ENDFUNCTION opt_label {
 		current_function_or_task = NULL;
 		ast_stack.pop_back();
 	};
@@ -967,7 +972,7 @@ task_func_args:
 	task_func_port | task_func_args ',' task_func_port;
 
 task_func_port:
-	attr wire_type range {
+	attr wire_type range_or_multirange {
 		if (albuf) {
 			delete astbuf1;
 			if (astbuf2 != NULL)
@@ -1477,10 +1482,12 @@ param_range:
 	};
 
 param_logic_range:
-	range {
+	range_or_multirange {
 		if ($1 != NULL) {
 			if (astbuf1->children.size() != 1)
 				frontend_verilog_yyerror("integer/real parameters should not have a range.");
+
+			// FIXME: is_packed = true and stuff
 			astbuf1->children.push_back($1);
 		} else {
 			astbuf1->children.push_back(new AstNode(AST_RANGE));
@@ -1919,8 +1926,26 @@ wire_name:
 		delete $1;
 	};
 
+strength_types:
+	TOK_STRONG0 |
+	TOK_STRONG1 |
+	TOK_PULL0 |
+	TOK_PULL1 |
+	TOK_HIGHZ0 |
+	TOK_HIGHZ1 |
+	TOK_WEAK0 |
+	TOK_WEAK1;
+
+non_opt_strength:
+	'(' strength_types ',' strength_types ')' {
+		log_warning("Yosys has only limited support for strength types at the moment.\n");
+	};
+
+strength:
+	non_opt_strength | /* empty */;
+
 assign_stmt:
-	TOK_ASSIGN delay assign_expr_list ';';
+	TOK_ASSIGN strength delay assign_expr_list ';';
 
 assign_expr_list:
 	assign_expr | assign_expr_list ',' assign_expr;
@@ -2531,6 +2556,12 @@ simple_behavioral_stmt:
 			append_attr(node, $1);
 		}
 	} |
+	attr lvalue TOK_XOR_ASSIGN delay expr {
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, new AstNode(AST_BIT_XOR, $2->clone(), $5));
+		SET_AST_NODE_LOC(node, @2, @5);
+		ast_stack.back()->children.push_back(node);
+		append_attr(node, $1);
+	} |
 	attr lvalue TOK_OR_ASSIGN delay expr {
 		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, new AstNode(AST_BIT_OR, $2->clone(), $5));
 		SET_AST_NODE_LOC(node, @2, @5);
@@ -2669,6 +2700,9 @@ behavioral_stmt:
 		SET_AST_NODE_LOC(ast_stack.back(), @2, @9);
 		case_type_stack.pop_back();
 		ast_stack.pop_back();
+	} |
+	TOK_RETURN expr {
+		// FIXME: AST!
 	};
 
 unique_case_attr:
