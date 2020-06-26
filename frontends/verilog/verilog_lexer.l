@@ -232,6 +232,7 @@ static bool isUserType(std::string &s)
 "while"        { return TOK_WHILE; }
 "repeat"       { return TOK_REPEAT; }
 "automatic"    { return TOK_AUTOMATIC; }
+"return"       { return TOK_RETURN; }
 
 "unique"       { SV_KEYWORD(TOK_UNIQUE); }
 "unique0"      { SV_KEYWORD(TOK_UNIQUE); }
@@ -290,6 +291,15 @@ static bool isUserType(std::string &s)
 "struct"  { SV_KEYWORD(TOK_STRUCT); }
 "union"   { SV_KEYWORD(TOK_UNION); }
 "packed"  { SV_KEYWORD(TOK_PACKED); }
+
+"strong0" { return TOK_STRONG0; }
+"strong1" { return TOK_STRONG1; }
+"pull0"   { return TOK_PULL0; }
+"pull1"   { return TOK_PULL1; }
+"highz0"  { return TOK_HIGHZ0; }
+"highz1"  { return TOK_HIGHZ1; }
+"weak0"   { return TOK_WEAK0; }
+"weak1"   { return TOK_WEAK1; }
 
 [0-9][0-9_]* {
 	yylval->string = new std::string(yytext);
@@ -548,6 +558,7 @@ import[ \t\r\n]+[a-zA-Z_$][a-zA-Z0-9_$]*[ \t\r\n]*"::"[ \t\r\n]*"*"[ \t\r\n]*";"
 
 ".*" { return TOK_WILDCARD_CONNECT; }
 
+"^=" { return TOK_XOR_ASSIGN; }
 "|=" { return TOK_OR_ASSIGN; }
 "+=" { return TOK_PLUS_ASSIGN; }
 
