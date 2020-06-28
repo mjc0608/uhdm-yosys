@@ -4844,4 +4844,3 @@ signed_mult #(.WIDTH(32)) u_signed_mult_32(
 endmodule
 /*qlal4s3_mult_cell*/
 
-
