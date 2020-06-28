@@ -282,12 +282,11 @@ module logic_cell_macro(
     wire TAP1,TAP2,TBP1,TBP2,BAP1,BAP2,BBP1,BBP2,QCKP,TAI,TBI,BAI,BBI,TZI,BZI,CZI,QZI;
     reg QZ_r;
 	
-	initial
-	begin
-		QZ_r=1'b0;
-	end
-
-	assign QZ = QZ_r;
+    initial
+    begin
+        QZ_r=1'b0;
+    end
+    assign QZ = QZ_r;
     assign TAP1 = TAS1 ? ~TA1 : TA1; 
     assign TAP2 = TAS2 ? ~TA2 : TA2; 
     assign TBP1 = TBS1 ? ~TB1 : TB1; 
@@ -314,12 +313,12 @@ module logic_cell_macro(
     always @(posedge QCKP)
         if(~QRT && ~QST)
             if(QEN)
-                QZ = QZI;
+                QZ_r = QZI;
     always @(QRT or QST)
         if(QRT)
-            QZ = 1'b0;
+            QZ_r = 1'b0;
         else if (QST)
-            QZ = 1'b1;
+            QZ_r = 1'b1;
 
 endmodule
 
@@ -4734,6 +4733,114 @@ assign IP = EN ? OQ : 1'bz;
 endmodule
 
 
+module inpadff ( FFCLK , FFCLR, FFEN, P, FFQ, Q );
+
+input FFCLK;
+input FFCLR, FFEN;
+output FFQ;
+input P;
+output Q;
+
+wire  VCC, GND;
+
+assign VCC = 1'b1;
+assign GND = 1'b0;
+
+gpio_cell_macro I1  ( .DS(GND) , .ESEL(VCC) , .FIXHOLD(GND) , .IE(GND) , .INEN(VCC),
+                      .IP(P) , .IQC(FFCLK) , .IQCS(GND) , .IQE(FFEN) , .IQR(FFCLR),
+                      .IQZ(FFQ) , .IZ(Q) , .OQE(GND) , .OQI(GND) , .OSEL(VCC),
+                      .WPD(GND) );
+
+
+endmodule /* inpadff */
+
+
+module outpadff ( A , FFCLK, FFCLR, FFEN, P );
+
+input A;
+input FFCLK;
+input FFCLR, FFEN;
+output P;
+
+wire  VCC, GND;
+
+assign VCC = 1'b1;
+assign GND = 1'b0;
+
+gpio_cell_macro I1  ( .DS(GND) , .ESEL(VCC) , .FIXHOLD(GND) , .IE(VCC) , .INEN(GND),
+                      .IP(P) , .IQC(FFCLK) , .IQCS(GND) , .IQE(GND) , .IQR(FFCLR),
+                      .OQE(FFEN) , .OQI(A) , .OSEL(GND) , .WPD(GND), .IQZ(), .IZ() );
+
+
+endmodule /* outpadff */
+
+
+module bipadoff ( A2 , EN, FFCLK, FFCLR, O_FFEN, Q, P );
+
+input A2, EN;
+input FFCLK;
+input FFCLR, O_FFEN;
+inout P;
+output Q;
+
+wire  VCC, GND;
+
+assign VCC = 1'b1;
+assign GND = 1'b0;
+
+gpio_cell_macro I1  ( .DS(GND) , .ESEL(VCC) , .FIXHOLD(GND) , .IE(EN) , .INEN(VCC),
+                      .IP(P) , .IQC(FFCLK) , .IQCS(GND) , .IQE(GND) , .IQR(FFCLR),
+                      .IZ(Q) , .OQE(O_FFEN) , .OQI(A2) , .OSEL(GND) , .WPD(GND), .IQZ() );
+
+
+endmodule /* bipadoff */
+
+
+module bipadiff ( A2 , EN, FFCLK, FFCLR, FFEN, FFQ, Q, P );
+
+input A2, EN;
+input FFCLK;
+input FFCLR, FFEN;
+output FFQ;
+inout P;
+output Q;
+
+wire  VCC, GND;
+
+assign VCC = 1'b1;
+assign GND = 1'b0;
+
+gpio_cell_macro I1  ( .DS(GND) , .ESEL(VCC) , .FIXHOLD(GND) , .IE(EN) , .INEN(VCC),
+                      .IP(P) , .IQC(FFCLK) , .IQCS(GND) , .IQE(FFEN) , .IQR(FFCLR),
+                      .IQZ(FFQ) , .IZ(Q) , .OQE(GND) , .OQI(A2) , .OSEL(VCC) , .WPD(GND) );
+
+
+endmodule /* bipadiff */
+
+
+module bipadioff ( A2 , EN, FFCLK, FFCLR, I_FFEN, O_FFEN, FFQ, Q, P );
+
+input A2, EN;
+input FFCLK;
+input FFCLR;
+output FFQ;
+input I_FFEN, O_FFEN;
+inout P;
+output Q;
+
+wire  VCC, GND;
+
+assign VCC = 1'b1;
+assign GND = 1'b0;
+
+gpio_cell_macro I1  ( .DS(GND) , .ESEL(VCC) , .FIXHOLD(GND) , .IE(EN) , .INEN(VCC),
+                      .IP(P) , .IQC(FFCLK) , .IQCS(GND) , .IQE(I_FFEN) , .IQR(FFCLR),
+                      .IQZ(FFQ) , .IZ(Q) , .OQE(O_FFEN) , .OQI(A2) , .OSEL(GND),
+                      .WPD(GND) );
+
+
+endmodule /* bipadioff */
+
 (* blackbox *)
 module qlal4s3_mult_32x32_cell (
     input [31:0] Amult,
@@ -4846,4 +4953,3 @@ signed_mult #(.WIDTH(32)) u_signed_mult_32(
 
 endmodule
 /*qlal4s3_mult_cell*/
-
