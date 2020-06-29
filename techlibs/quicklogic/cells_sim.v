@@ -4868,7 +4868,7 @@ module signed_mult(
     C
 );
 
-parameter	WIDTH	= 0;
+parameter	WIDTH	= 32;
 parameter	CWIDTH  = 2*WIDTH;
     
 input [WIDTH-1:0] A, B;
