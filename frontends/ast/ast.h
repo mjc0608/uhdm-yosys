@@ -47,6 +47,7 @@ namespace AST
 		AST_TASK,
 		AST_FUNCTION,
 		AST_DPI_FUNCTION,
+		AST_IMPORT_PACKAGE,
 
 		AST_WIRE,
 		AST_MEMORY,
@@ -114,6 +115,7 @@ namespace AST
 		AST_LOGIC_OR,
 		AST_LOGIC_NOT,
 		AST_TERNARY,
+		AST_INSIDE,
 		AST_MEMRD,
 		AST_MEMWR,
 		AST_MEMINIT,
@@ -198,6 +200,8 @@ namespace AST
 		double realvalue;
 		// set for IDs typed to an enumeration, not used
 		bool is_enum;
+		// for AST_RANGES
+		bool is_packed;
 
 		// if this is a multirange memory then this vector contains offset and length of each dimension
 		std::vector<int> multirange_dimensions;

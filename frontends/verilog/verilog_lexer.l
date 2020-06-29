@@ -232,10 +232,12 @@ static bool isUserType(std::string &s)
 "while"        { return TOK_WHILE; }
 "repeat"       { return TOK_REPEAT; }
 "automatic"    { return TOK_AUTOMATIC; }
+"return"       { return TOK_RETURN; }
 
 "unique"       { SV_KEYWORD(TOK_UNIQUE); }
 "unique0"      { SV_KEYWORD(TOK_UNIQUE); }
 "priority"     { SV_KEYWORD(TOK_PRIORITY); }
+"inside"       { SV_KEYWORD(TOK_INSIDE); }
 
 "always_comb"  { SV_KEYWORD(TOK_ALWAYS_COMB); }
 "always_ff"    { SV_KEYWORD(TOK_ALWAYS_FF); }
@@ -289,6 +291,15 @@ static bool isUserType(std::string &s)
 "struct"  { SV_KEYWORD(TOK_STRUCT); }
 "union"   { SV_KEYWORD(TOK_UNION); }
 "packed"  { SV_KEYWORD(TOK_PACKED); }
+
+"strong0" { return TOK_STRONG0; }
+"strong1" { return TOK_STRONG1; }
+"pull0"   { return TOK_PULL0; }
+"pull1"   { return TOK_PULL1; }
+"highz0"  { return TOK_HIGHZ0; }
+"highz1"  { return TOK_HIGHZ1; }
+"weak0"   { return TOK_WEAK0; }
+"weak1"   { return TOK_WEAK1; }
 
 [0-9][0-9_]* {
 	yylval->string = new std::string(yytext);
@@ -417,7 +428,15 @@ supply1 { return TOK_SUPPLY1; }
 		return TOK_USER_TYPE;
 	}
 	else {
-		yylval->string = new std::string(std::string("\\") + yytext);
+		for (const auto& d : imported_pkgs) {
+			std::string quals = d + "::" + yytext;
+			if (pkg_user_types.count(quals) > 0) {
+				yylval->string = new std::string(quals);
+				return TOK_PKG_USER_TYPE;
+			}
+		}
+
+		yylval->string = new std::string(s);
 		return TOK_ID;
 	}
 }
@@ -483,6 +502,19 @@ import[ \t\r\n]+\"(DPI|DPI-C)\"[ \t\r\n]+function[ \t\r\n]+ {
 
 <IMPORT_DPI>. {
 	return *yytext;
+}
+
+import[ \t\r\n]+[a-zA-Z_$][a-zA-Z0-9_$]*[ \t\r\n]*"::"[ \t\r\n]*"*"[ \t\r\n]*";" {
+  auto* ret = new std::string("\\");
+
+  const auto *ptr = yytext;
+  auto *begin = strchr(ptr, ' '); // skip "import"
+  for (; *begin && isspace(*begin); ++begin) ; // skip white spaces
+  auto *end = strstr(ptr, "::");
+  *ret += std::string(begin, end); // copy package name
+  imported_pkgs.push_back(*ret);
+  yylval->string = ret;
+  return TOK_IMPORT_PACKAGE;
 }
 
 "\\"[^ \t\r\n]+ {
