@@ -792,7 +792,7 @@ bool AstNode::simplify(bool const_fold, bool at_zero, bool in_lvalue, int stage,
 		for (size_t i = 0; i < children.size(); i++) {
 			AstNode *node = children[i];
 			// these nodes appear at the top level in a package and can define names
-			if (node->type == AST_PARAMETER || node->type == AST_LOCALPARAM || node->type == AST_TYPEDEF) {
+			if (node->type == AST_PARAMETER || node->type == AST_LOCALPARAM || node->type == AST_TYPEDEF || node->type == AST_FUNCTION) {
 				current_scope[node->str] = node;
 			}
 			if (node->type == AST_ENUM) {
@@ -805,6 +805,27 @@ bool AstNode::simplify(bool const_fold, bool at_zero, bool in_lvalue, int stage,
 						log_file_error(filename, location.first_line, "enum item %s already exists in package\n", enode->str.c_str());
 				}
 			}
+		}
+
+		for (size_t i = 0 ; i < children.size() ; ++i) {
+			AstNode* node = children[i];
+			if (node->type != AST_FUNCTION)
+				continue;
+
+			const auto& package_name = str;
+			std::function<void(AstNode*)> fix_references = [&package_name,&fix_references] (AstNode* node) {
+				for (auto* itr : node->children) {
+					if (itr->type == AST_FCALL || itr->type == AST_IDENTIFIER) {
+						if (current_scope.count(itr->str)) {
+							itr->str = package_name + "::" + (itr->str.substr(1));
+						}
+					}
+
+					fix_references(itr);
+				}
+			};
+
+			fix_references(node);
 		}
 	}
 
@@ -1659,6 +1680,11 @@ bool AstNode::simplify(bool const_fold, bool at_zero, bool in_lvalue, int stage,
 			if(identifier->type == AST_IDENTIFIER) {
 				if (identifier->children.size() == 0 && current_scope.count(identifier->str) > 0 && current_scope[identifier->str]->type == AST_MEMORY && current_scope[identifier->str]->children.size() == 2) {
 					identifier->children.push_back(current_scope[identifier->str]->children[1]->clone());
+
+					AstNode *mem = current_scope[identifier->str]; // force mem to be replaced by list of registers, as code below, assumes this
+					AstNode *force_reg = new AstNode(AST_CONSTANT);
+					force_reg->integer = 1;
+					mem->attributes[ID::mem2reg] = force_reg;
 				}
 			}
 			if (identifier->children.size() == 1 && identifier->children[0]->type == AST_RANGE) {
@@ -2793,24 +2819,28 @@ skip_dynamic_range_lvalue_expansion:;
 	}
 
 	if(children.size() > 0) {
-		for (auto *c : this->children) {
+		for (auto *c : children) {
 			if (c->type == AST_ASSIGN_EQ || c->type == AST_ASSIGN_LE || c->type == AST_ASSIGN) {
-				if(c->children[0]->type == AST_IDENTIFIER && c->children[0]->id2ast && c->children[0]->id2ast->type == AST_MEMORY && c->children[0]->children.size() == 0 && c->children[0]->id2ast->children.size() == 2) {
-					for (auto *cc : c->children) {
-						auto *identifier = cc;
-						AstNode *rangenode = new AstNode(AST_RANGE);
-						AstNode *id = new AstNode(AST_CONSTANT);
-						id->integer = 0;
-						rangenode->children.push_back(id);
-						rangenode->range_left = 0;
-						rangenode->range_right = 0;
-						identifier->children.push_back(rangenode);
-					}
-					const auto *range = c->children[0]->id2ast->children[1];
-					AstNode *mem = c->children[0]->id2ast;
+				const auto *lhs = c->children[0];
+				if(lhs->type == AST_IDENTIFIER && lhs->id2ast && lhs->id2ast->type == AST_MEMORY && lhs->children.size() == 0 && lhs->id2ast->children.size() == 2) {
+					AstNode *mem = lhs->id2ast;
 					AstNode *force_reg = new AstNode(AST_CONSTANT);
 					force_reg->integer = 1;
 					mem->attributes[ID::mem2reg] = force_reg; //force mem to be changed to registers
+
+					for (auto *cc : c->children) { //only for a = b
+						if (cc->type == AST_IDENTIFIER) {
+							auto *identifier = cc;
+							AstNode *rangenode = new AstNode(AST_RANGE);
+							AstNode *id = new AstNode(AST_CONSTANT);
+							id->integer = 0;
+							rangenode->children.push_back(id);
+							rangenode->range_left = 0;
+							rangenode->range_right = 0;
+							identifier->children.push_back(rangenode);
+						}
+					}
+					const auto *range = mem->children[1];
 					AstNode *clone = c->clone();
 					auto pos = std::find(children.begin(), children.end(), c); // find position of current node
 					log_assert(pos != children.end());
@@ -2821,13 +2851,27 @@ skip_dynamic_range_lvalue_expansion:;
 						left = right;
 						right = tmp;
 					}
-					for (int i = left + 1; i <= right ; ++i) { // skip cloned node
-						auto *cl = clone->clone();
+					for (int i = left; i <= right ; ++i) {
+						AstNode *cl;
+						if (i == left)
+							cl = c;
+						else
+							cl = clone->clone();
 						cl->children[0]->children[0]->range_left = i;
 						cl->children[0]->children[0]->range_right = i;
 						cl->children[0]->children[0]->children[0]->integer = i;
-						cl->children[1]->children[0]->children[0]->integer = i;
-						children.insert(pos, cl);
+						cl->children[0]->children[0]->range_valid = true;
+						if(cl->children[1]->type == AST_IDENTIFIER) {
+							cl->children[1]->children[0]->range_left = i;
+							cl->children[1]->children[0]->range_right = i;
+							cl->children[1]->children[0]->children[0]->integer = i;
+							cl->children[1]->children[0]->range_valid = true;
+						}
+						else if (cl->children[1]->type == AST_CONCAT) {
+							cl->children[1] = cl->children[1]->children[i];
+						}
+						if (i != left)
+							children.insert(pos, cl);
 					}
 					did_something = true;
 				}
@@ -3467,8 +3511,15 @@ skip_dynamic_range_lvalue_expansion:;
 
 		AstNode *decl = current_scope[str];
 
+		std::string func_name = str;
+		// use unqualifed name (without package name)
+		const auto& package_sep = str.find("::");
+		if (package_sep != std::string::npos) {
+			func_name = "\\" + str.substr(package_sep+2);
+		}
+
 		std::stringstream sstr;
-		sstr << "$func$" << str << "$" << filename << ":" << location.first_line << "$" << (autoidx++) << "$";
+		sstr << "$func$" << func_name << "$" << filename << ":" << location.first_line << "$" << (autoidx++) << "$";
 		std::string prefix = sstr.str();
 
 		bool recommend_const_eval = false;
@@ -3508,11 +3559,11 @@ skip_dynamic_range_lvalue_expansion:;
 
 			AstNode *wire = NULL;
 			for (auto child : decl->children)
-				if (child->type == AST_WIRE && child->str == str)
+				if (child->type == AST_WIRE && child->str == func_name)
 					wire = child->clone();
 			log_assert(wire != NULL);
 
-			wire->str = prefix + str;
+			wire->str = prefix + func_name;
 			wire->port_id = 0;
 			wire->is_input = false;
 			wire->is_output = false;
@@ -3535,7 +3586,7 @@ skip_dynamic_range_lvalue_expansion:;
 		if (decl->attributes.count(ID::via_celltype))
 		{
 			std::string celltype = decl->attributes.at(ID::via_celltype)->asAttrConst().decode_string();
-			std::string outport = str;
+			std::string outport = func_name;
 
 			if (celltype.find(' ') != std::string::npos) {
 				int pos = celltype.find(' ');
@@ -3685,7 +3736,7 @@ skip_dynamic_range_lvalue_expansion:;
 		if (type == AST_FCALL) {
 			delete_children();
 			type = AST_IDENTIFIER;
-			str = prefix + str;
+			str = prefix + func_name;
 		}
 		if (type == AST_TCALL)
 			str = "";
@@ -4783,6 +4834,11 @@ AstNode *AstNode::eval_const_function(AstNode *fcall)
 	std::map<std::string, AstNode*> backup_scope;
 	std::map<std::string, AstNode::varinfo_t> variables;
 	AstNode *block = new AstNode(AST_BLOCK);
+
+	auto package_str = str.find("::"); // if str is in package, remove it
+	if (package_str != std::string::npos) {
+		str = "\\" + str.substr(package_str + 2);
+	}
 
 	size_t argidx = 0;
 	for (auto child : children)

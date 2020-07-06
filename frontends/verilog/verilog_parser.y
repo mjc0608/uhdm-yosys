@@ -265,8 +265,13 @@ static void addGenvar() {
 
 	for (auto itr = ast_stack.rbegin() ; itr != ast_stack.rend() ; itr++) {
 		auto* node = *itr;
-		if (node->type == AST_MODULE)
+		if (node->type == AST_MODULE) {
 			node->children.push_back(templ);
+			break;
+		} else if (node->type == AST_FUNCTION) {
+			node->children.push_back(templ);
+			break;
+		}
 	}
 }
 %}
@@ -984,7 +989,12 @@ task_func_port:
 		}
 		albuf = $1;
 		astbuf1 = $2;
-		astbuf2 = checkRange(astbuf1, $3);
+		if ($3 != NULL && $3->type == AST_MULTIRANGE) {
+			astbuf2 = $3;
+			astbuf2->is_packed = true;
+		} else if (astbuf1 != NULL && $3 != NULL) {
+			astbuf2 = checkRange(astbuf1, $3);
+		}
 	} wire_name |
 	{
 		if (!astbuf1) {
@@ -1955,9 +1965,23 @@ assign_expr_list:
 
 assign_expr:
 	lvalue '=' expr {
-		AstNode *node = new AstNode(AST_ASSIGN, $1, $3);
-		SET_AST_NODE_LOC(node, @$, @$);
-		ast_stack.back()->children.push_back(node);
+		if($3->type == AST_BLOCK) { //struct assigment list
+			for (auto *child : $3->children) {
+				if (child->children[0]->str.compare(0, 1, "\\") == 0)
+					child->children[0]->str = child->children[0]->str.substr(1);
+				if(child->children[0]->str != "")
+					child->children[0]->str = $1->str + "." + child->children[0]->str;
+				else
+					child->children[0]->str = $1->str;
+				child->type = AST_ASSIGN;
+				ast_stack.back()->children.push_back(child);
+				SET_AST_NODE_LOC(child, @1, @3);
+			}
+		} else {
+			AstNode *node = new AstNode(AST_ASSIGN, $1, $3);
+			SET_AST_NODE_LOC(node, @$, @$);
+			ast_stack.back()->children.push_back(node);
+		}
 	};
 
 type_name: TOK_ID		// first time seen
@@ -2497,7 +2521,6 @@ simple_behavioral_stmt:
 					child->children[0]->str = $2->str + "." + child->children[0]->str;
 				else
 					child->children[0]->str = $2->str;
-				log("Child name: %s\n", child->children[0]->str.c_str());
 				child->type = AST_ASSIGN_EQ;
 				ast_stack.back()->children.push_back(child);
 				SET_AST_NODE_LOC(child, @2, @5);
