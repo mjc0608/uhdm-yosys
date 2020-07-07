@@ -1,0 +1,55 @@
+read_verilog -sv <<EOT
+module foo;
+for (genvar k = 0 ; k < 2; k++)
+begin end
+endmodule
+EOT
+
+design -reset
+
+read_verilog -sv <<EOT
+module foo;
+genvar k;
+for (k = 0 ; k < 2; k++)
+begin end
+endmodule
+EOT
+
+design -reset
+
+read_verilog -sv <<EOT
+module foo;
+for (int k = 0 ; k < 2; k++)
+begin end
+endmodule
+EOT
+
+design -reset
+
+read_verilog -sv <<EOT
+module foo;
+for (int unsigned k = 0 ; k < 2; k++)
+begin end
+endmodule
+EOT
+
+design -reset
+
+read_verilog -sv <<EOT
+module foo;
+for (int signed k = 0 ; k < 2; k++)
+begin end
+endmodule
+EOT
+
+design -reset
+read_verilog -sv <<EOT
+module foo#(
+  parameter integer unsigned a = 4
+)();
+logic [4:0] b;
+always
+	for (int signed k = a; k >= 0; k--)
+		b[k] = 1'b0;
+endmodule
+EOT
