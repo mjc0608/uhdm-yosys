@@ -1,0 +1,9 @@
+read_verilog -sv <<EOT
+module test_reg_param();
+parameter reg                 a = 0;
+parameter reg [31:0]          e = 0;
+parameter reg signed          b = 0;
+parameter reg unsigned        c = 0;
+parameter reg unsigned [31:0] d = 0;
+endmodule
+EOT
