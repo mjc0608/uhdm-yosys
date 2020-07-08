@@ -19,8 +19,10 @@ design -reset
 
 read_verilog -sv <<EOT
 module foo;
-for (int k = 0 ; k < 2; k++)
-begin end
+always @(*) begin
+	for (int k = 0 ; k < 2; k++)
+	begin end
+end
 endmodule
 EOT
 
@@ -28,8 +30,10 @@ design -reset
 
 read_verilog -sv <<EOT
 module foo;
-for (int unsigned k = 0 ; k < 2; k++)
-begin end
+always @(*) begin
+	for (int unsigned k = 0 ; k < 2; k++)
+	begin end
+end
 endmodule
 EOT
 
@@ -37,8 +41,10 @@ design -reset
 
 read_verilog -sv <<EOT
 module foo;
-for (int signed k = 0 ; k < 2; k++)
-begin end
+always @(*) begin
+	for (int signed k = 0 ; k < 2; k++)
+	begin end
+end
 endmodule
 EOT
 

@@ -71,7 +71,8 @@ namespace VERILOG_FRONTEND {
 	bool current_modport_input, current_modport_output;
 	std::istream *lexin;
 
-	bool add_for_localscope;
+	int block_counter;
+	std::vector<std::pair<std::string, std::set<std::string>>> scope_variables;
 }
 YOSYS_NAMESPACE_END
 
@@ -230,35 +231,61 @@ static void fixId(AstNode* node, std::string& loop_id, std::string& id_localscop
 	}
 }
 
-static void addForLocalScope() {
-	AstNode* for_node = ast_stack.back();
-	log_assert(for_node->type == AST_FOR || for_node->type == AST_GENFOR);
-	std::string loop_id = for_node->children[0]->children[0]->str;
-	std::string for_id = for_node->str.substr(1);
+static void enterScope(std::string name) {
+	if(name.find("unnamed::block") != std::string::npos) {
+		name += std::to_string(block_counter++);
+	}
+	scope_variables.push_back(std::make_pair(name, std::set<std::string>()));
+}
 
-	std::string id_localscope_name = "\\" + for_id + "::" + loop_id.substr(1);
+static void addVariable(std::string vName) {
+	if (scope_variables.size() > 0) {
+		scope_variables.back().second.insert(vName);
+	}
+}
 
-	fixId(for_node, loop_id, id_localscope_name);
 
-	AstNode *wire_definition_node = for_node->type == AST_GENFOR ? new AstNode(AST_GENVAR) : new AstNode(AST_WIRE);
-	current_wire_rand = false;
-	current_wire_const = false;
-	wire_definition_node->is_reg = true;
-	wire_definition_node->is_signed = for_node->children[0]->children[0]->is_signed;
-	wire_definition_node->range_left = 31;
-	wire_definition_node->range_right = 0;
-	wire_definition_node->str = id_localscope_name;
+static void addLocalScope(AstNode *node) {
+	if(!node)
+		return;
+	if(scope_variables.size() == 0 || scope_variables.back().first.find("unnamed::block") == std::string::npos)
+		return;
+	auto scope = scope_variables.back();
+	auto scope_name = scope.first;
+	auto scope_variables = scope.second;
+	std::vector<AstNode*> childrens_to_remove;
+	for (auto *child : node->children) {
+		addLocalScope(child);
+		if(!scope_variables.count(child->str)) //check if variable should be converted to local scope
+			continue;
+		std::string wire_str = child->str;
+		std::string rename_str = scope_name + "::" + wire_str.substr(1);
 
-	for (auto itr = ast_stack.rbegin() ; itr != ast_stack.rend() ; itr++) {
-		auto* node = *itr;
-		if (node->type == AST_MODULE) {
-			node->children.push_back(wire_definition_node);
-			break;
-		} else if (node->type == AST_FUNCTION) {
-			node->children.push_back(wire_definition_node);
-			break;
+		fixId(node, wire_str, rename_str);
+		if(child->type == AST_IDENTIFIER) // do not create AST_WIRE in global scope for AST_IDENTFIERs
+			continue;
+
+		log_assert(child->type == AST_WIRE || child->type == AST_GENVAR);
+		AstNode *wire = child->clone();
+		if(node->type == AST_BLOCK)
+			childrens_to_remove.push_back(child);
+		else
+			child->type = AST_IDENTIFIER;
+
+		for (auto itr = ast_stack.rbegin(); itr != ast_stack.rend(); itr++) {
+			auto *node = *itr;
+			if (node->type == AST_MODULE || node->type == AST_FUNCTION) {
+				node->children.push_back(wire);
+				break;
+			}
 		}
 	}
+	for(auto child : childrens_to_remove)
+		node->children.erase(std::remove(node->children.begin(), node->children.end(), child), node->children.end());
+}
+static void exitScope() {
+	addLocalScope(ast_stack.back());
+	scope_variables.pop_back();
 }
 %}
 
@@ -702,9 +729,23 @@ wire_type_token:
 	} |
 	TOK_INTEGER {
 		astbuf3->is_reg = true;
-		astbuf3->range_left = 31;
-		astbuf3->range_right = 0;
 		astbuf3->is_signed = true;
+		addRange(astbuf3);
+	} |
+	TOK_INT {
+		astbuf3->is_reg = true;
+		astbuf3->is_signed = true;
+		addRange(astbuf3);
+	} |
+	TOK_SHORTINT {
+		astbuf3->is_reg = true;
+		astbuf3->is_signed = true;
+		addRange(astbuf3, 15, 0);
+	} |
+	TOK_BYTE {
+		astbuf3->is_reg = true;
+		astbuf3->is_signed = true;
+		addRange(astbuf3, 7, 0);
 	} |
 	TOK_GENVAR {
 		astbuf3->type = AST_GENVAR;
@@ -715,6 +756,9 @@ wire_type_token:
 	} |
 	TOK_SIGNED {
 		astbuf3->is_signed = true;
+	} |
+	TOK_UNSIGNED {
+		astbuf3->is_signed = false;
 	} |
 	TOK_RAND {
 		current_wire_rand = true;
@@ -1486,10 +1530,10 @@ enum_base_type: type_atom type_signing
 	| %empty			{ astbuf1->is_reg = true; addRange(astbuf1); }
 	;
 
-type_atom: TOK_INTEGER		{ astbuf1->is_reg = true; addRange(astbuf1); }		// 4-state signed
-	|  TOK_INT		{ astbuf1->is_reg = true; addRange(astbuf1); }		// 2-state signed
-	|  TOK_SHORTINT		{ astbuf1->is_reg = true; addRange(astbuf1, 15, 0); }	// 2-state signed
-	|  TOK_BYTE		{ astbuf1->is_reg = true; addRange(astbuf1,  7, 0); }	// 2-state signed
+type_atom: TOK_INTEGER		{ astbuf1->is_reg = true; astbuf1->is_signed = true; addRange(astbuf1); }		// 4-state signed
+	|  TOK_INT		{ astbuf1->is_reg = true; astbuf1->is_signed = true; addRange(astbuf1); }		// 2-state signed
+	|  TOK_SHORTINT		{ astbuf1->is_reg = true; astbuf1->is_signed = true; addRange(astbuf1, 15, 0); }	// 2-state signed
+	|  TOK_BYTE		{ astbuf1->is_reg = true; astbuf1->is_signed = true; addRange(astbuf1,  7, 0); }	// 2-state signed
 	;
 
 type_vec: TOK_REG		{ astbuf1->is_reg   = true; }		// unsigned
@@ -2345,40 +2389,47 @@ assert_property:
 		}
 	};
 
+
+local_definition_stmt:
+	{ astbuf1 = new AstNode(AST_IDENTIFIER); }
+	member_type lvalue '=' delay expr {
+		$3->is_signed = astbuf1->is_signed;
+		$3->is_reg = astbuf1->is_reg;
+		for(auto *child : astbuf1->children)
+			$3->children.push_back(child->clone());
+		delete astbuf1;
+		$3->type = AST_WIRE;
+		addVariable($3->str);
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, $3, $6);
+		ast_stack.back()->children.push_back(node);
+		SET_AST_NODE_LOC(node, @3, @6);
+	};
+
+definition_behavioral_stmt_or_simple_behavioral_stmt:
+	 definition_behavioral_stmt | simple_behavioral_stmt;
+
+definition_behavioral_stmt:
+	local_definition_stmt  |
+	attr TOK_GENVAR lvalue '=' delay expr {
+		$3->is_reg = true;
+		$3->is_signed = true;
+		$3->range_left = 31;
+		$3->range_right = 0;
+		$3->type = AST_GENVAR;
+		addVariable($3->str);
+		AstNode *node = new AstNode(AST_ASSIGN_EQ, $3, $6);
+		ast_stack.back()->children.push_back(node);
+		SET_AST_NODE_LOC(node, @3, @6);
+		append_attr(node, $1);
+	};
+
+
 simple_behavioral_stmt:
 	attr lvalue '=' delay expr {
 		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, $5);
 		ast_stack.back()->children.push_back(node);
 		SET_AST_NODE_LOC(node, @2, @5);
 		append_attr(node, $1);
-	} |
-	TOK_INT lvalue '=' delay expr {
-		add_for_localscope = true;
-		$2->is_signed = true;
-		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, $5);
-		ast_stack.back()->children.push_back(node);
-		SET_AST_NODE_LOC(node, @2, @5);
-	} |
-	TOK_INT TOK_UNSIGNED lvalue '=' delay expr {
-		add_for_localscope = true;
-		$3->is_signed = false;
-		AstNode *node = new AstNode(AST_ASSIGN_EQ, $3, $6);
-		ast_stack.back()->children.push_back(node);
-		SET_AST_NODE_LOC(node, @3, @6);
-	} |
-	TOK_INT TOK_SIGNED lvalue '=' delay expr {
-		add_for_localscope = true;
-		$3->is_signed = true;
-		AstNode *node = new AstNode(AST_ASSIGN_EQ, $3, $6);
-		ast_stack.back()->children.push_back(node);
-		SET_AST_NODE_LOC(node, @3, @6);
-	} |
-	TOK_GENVAR lvalue '=' delay expr {
-		add_for_localscope = true;
-		$2->is_signed = true;
-		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, $5);
-		ast_stack.back()->children.push_back(node);
-		SET_AST_NODE_LOC(node, @2, @5);
 	} |
 	attr lvalue TOK_INCREMENT {
 		AstNode *node = new AstNode(AST_ASSIGN_EQ, $2, new AstNode(AST_ADD, $2->clone(), AstNode::mkconst_int(1, true)));
@@ -2439,9 +2490,26 @@ simple_behavioral_stmt:
 		append_attr(node, $1);
 	};
 
+local_wire_decl:
+	wire_decl {
+		if(ast_stack.back()->type != AST_FUNCTION) {
+			for(auto *child : ast_stack.back()->children) {
+				if(child->type == AST_INITIAL) {
+					auto *stack_back = ast_stack.back();
+					for(auto *c : child->children)
+						stack_back->children.push_back(c);
+					stack_back->children.erase(std::remove(stack_back->children.begin(), stack_back->children.end(), child), stack_back->children.end());
+				}
+				if(child->type == AST_WIRE) {
+					addVariable(child->str);
+				}
+			}
+		}
+	}
+
 // this production creates the obligatory if-else shift/reduce conflict
 behavioral_stmt:
-	defattr | assert | wire_decl | param_decl | localparam_decl | typedef_decl |
+	defattr | assert | local_wire_decl | param_decl | localparam_decl | typedef_decl |
 	non_opt_delay behavioral_stmt |
 	simple_behavioral_stmt ';' |
 	attr ';' {
@@ -2474,10 +2542,11 @@ behavioral_stmt:
 		ast_stack.back()->children.push_back(node);
 		ast_stack.push_back(node);
 		append_attr(node, $1);
-		if ($4 != NULL)
-			node->str = *$4;
+		$4 ? node->str = *$4 : node->str = "";
+		$4 ? enterScope(*$4) : enterScope("\\unnamed::block");
 	} behavioral_stmt_list TOK_END opt_label {
 		exitTypeScope();
+		exitScope();
 		if ($4 != NULL && $8 != NULL && *$4 != *$8)
 			frontend_verilog_yyerror("Begin label (%s) and end label (%s) don't match.", $4->c_str()+1, $8->c_str()+1);
 		SET_AST_NODE_LOC(ast_stack.back(), @2, @8);
@@ -2486,6 +2555,7 @@ behavioral_stmt:
 		ast_stack.pop_back();
 	} |
 	attr TOK_FOR '(' {
+		enterScope("\\unnamed::block");
 		AstNode *node = new AstNode(AST_FOR);
 		static int loop_count;
 		node->str = std::string("$loop");
@@ -2493,8 +2563,7 @@ behavioral_stmt:
 		ast_stack.back()->children.push_back(node);
 		ast_stack.push_back(node);
 		append_attr(node, $1);
-		add_for_localscope = false;
-	} simple_behavioral_stmt ';' expr {
+	} definition_behavioral_stmt_or_simple_behavioral_stmt ';' expr {
 		ast_stack.back()->children.push_back($7);
 	} ';' simple_behavioral_stmt ')' {
 		AstNode *block = new AstNode(AST_BLOCK);
@@ -2503,9 +2572,8 @@ behavioral_stmt:
 	} behavioral_stmt {
 		SET_AST_NODE_LOC(ast_stack.back(), @13, @13);
 		ast_stack.pop_back();
+		exitScope();
 		SET_AST_NODE_LOC(ast_stack.back(), @2, @13);
-		if (add_for_localscope) 
-			addForLocalScope();
 		ast_stack.pop_back();
 	} |
 	attr TOK_WHILE '(' expr ')' {
@@ -2760,18 +2828,17 @@ gen_stmt_or_module_body_stmt:
 // this production creates the obligatory if-else shift/reduce conflict
 gen_stmt:
 	TOK_FOR '(' {
+		enterScope("\\unnamed::block");
 		AstNode *node = new AstNode(AST_GENFOR);
 		static int genfor_count;
 		node->str = std::string("$genfor");
 		node->str += std::to_string(genfor_count++);
 		ast_stack.back()->children.push_back(node);
 		ast_stack.push_back(node);
-		add_for_localscope = false;
-	} simple_behavioral_stmt ';' expr {
+	} definition_behavioral_stmt_or_simple_behavioral_stmt ';' expr {
 		ast_stack.back()->children.push_back($6);
 	} ';' simple_behavioral_stmt ')' gen_stmt_block {
-		if (add_for_localscope) 
-			addForLocalScope();
+		exitScope();
 		SET_AST_NODE_LOC(ast_stack.back(), @1, @11);
 		ast_stack.pop_back();
 	} |
@@ -2805,8 +2872,12 @@ gen_stmt:
 		node->str = $3 ? *$3 : std::string();
 		ast_stack.back()->children.push_back(node);
 		ast_stack.push_back(node);
+		$3 ? enterScope(*$3) : enterScope("\\unnamed::block");
 	} module_gen_body TOK_END opt_label {
 		exitTypeScope();
+		exitScope();
+		if ($3 != NULL && $7 != NULL && *$3 != *$7)
+			frontend_verilog_yyerror("Begin label (%s) and end label (%s) don't match.", $3->c_str()+1, $7->c_str()+1);
 		delete $3;
 		delete $7;
 		SET_AST_NODE_LOC(ast_stack.back(), @1, @7);
