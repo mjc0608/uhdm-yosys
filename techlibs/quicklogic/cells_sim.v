@@ -4686,6 +4686,7 @@ input IQCS;
 input INEN;
 input IQR;
 input WPD;
+(* iopad_external_pin *)
 inout IP;
 
 reg EN_reg, OQ_reg, IQZ;
