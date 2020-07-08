@@ -313,11 +313,11 @@ module logic_cell_macro(
 
     always @(posedge QCKP or posedge QRT or posedge QST)
         if (QRT)
-            QZ <= 1'b0;
+            QZ_r <= 1'b0;
         else if (QST)
-            QZ <= 1'b1;
+            QZ_r <= 1'b1;
         else
-            QZ <= QZI;
+            QZ_r <= QZI;
 
 endmodule
 
