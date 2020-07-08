@@ -1,0 +1,1 @@
+read_verilog -sv typedef_struct_port.sv
