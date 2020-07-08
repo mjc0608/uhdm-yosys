@@ -2585,7 +2585,6 @@ sdma_bfm sdma_bfm_inst0 (
 
 endmodule /* qlal4s3b_cell_macro_bfm*/
 
-(* blackbox *)
 (* keep *)
 module qlal4s3b_cell_macro(
     input	WB_CLK,
@@ -2754,7 +2753,6 @@ qlal4s3b_cell_macro_bfm	 u_ASSP_bfm_inst(
 
 endmodule /* qlal4s3b_cell_macro */
 
-(* blackbox *)
 module gclkbuff (input A, output Z);
 
 assign Z = A;
@@ -4584,7 +4582,6 @@ ram_block_8K ram_block_8K_inst (
 
 endmodule
 
-(* blackbox *)
 module ram8k_2x1_cell_macro (
     input [10:0] A1_0,
     input [10:0] A1_1,
@@ -4654,7 +4651,6 @@ module ram8k_2x1_cell_macro (
 
 endmodule /* ram8k_2x1_cell_macro */
 
-(* blackbox *)
 module gpio_cell_macro (
 
 		ESEL,
@@ -4892,7 +4888,6 @@ always @(*)
 
 endmodule
 
-(* blackbox *)
 module qlal4s3_mult_cell_macro ( Amult, Bmult, Valid_mult, sel_mul_32x32, Cmult);
 
 input [31:0] Amult;
