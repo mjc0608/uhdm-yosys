@@ -19,6 +19,12 @@ struct SynthQuickLogicPass : public ScriptPass
         log("    -top <module>\n");
         log("         use the specified module as top module\n");
         log("\n");
+        log("    -family <family>\n");
+        log("        run synthesis for the specified QuickLogic architecture\n");
+        log("        generate the synthesis netlist for the specified family.\n");
+        log("        supported values:\n");
+        log("        - pp3: PolarPro 3 \n");
+        log("\n");
         log("    -edif <file>\n");
         log("        write the design to the specified edif file. writing of an output file\n");
         log("        is omitted if this parameter is not specified.\n");
@@ -35,10 +41,12 @@ struct SynthQuickLogicPass : public ScriptPass
     std::string edif_file = "";
     std::string blif_file = "";
     std::string currmodule = "";
+    std::string family = "";
 
     void clear_flags() override
     {
         top_opt = "-auto-top";
+        family = "pp3";
         edif_file.clear();
         blif_file.clear();
     }
@@ -53,6 +61,10 @@ struct SynthQuickLogicPass : public ScriptPass
         {
             if (args[argidx] == "-top" && argidx+1 < args.size()) {
                 top_opt = "-top " + args[++argidx];
+                continue;
+            }
+            if (args[argidx] == "-family" && argidx+1 < args.size()) {
+                family = args[++argidx];
                 continue;
             }
             if (args[argidx] == "-edif" && argidx+1 < args.size()) {
@@ -81,7 +93,11 @@ struct SynthQuickLogicPass : public ScriptPass
     void script() override
     {
         if (check_label("begin")) {
+            std::string readVelArgs = "+/quicklogic/" + family + "_cells_sim.v";
+            run("read_verilog -lib -specify " + readVelArgs);
+
             run("read_verilog -lib +/quicklogic/cells_sim.v");
+
             run(stringf("hierarchy -check %s", top_opt.c_str()));
         }
 
@@ -99,22 +115,28 @@ struct SynthQuickLogicPass : public ScriptPass
             run("opt_clean");
             run("peepopt");
             run("techmap");
-            run("muxcover -mux8 -mux4");
-            run("abc -luts 1,2,2,4");
+            if (family == "pp3") {
+                run("muxcover -mux8 -mux4");
+                run("abc -luts 1,2,2,4");
+            }
             run("opt");
             run("check");
         }
 
         if (check_label("map")) {
-            run("techmap -map +/quicklogic/cells_map.v");
+            std::string techMapArgs = " -map +/quicklogic/cells_map.v";
+            techMapArgs += " -map +/quicklogic/" + family + "_cells_map.v";
+            run("techmap" + techMapArgs);
             run("opt_clean");
             run("check");
             run("autoname");
         }
 
         if (check_label("iomap")) {
-            run("clkbufmap -buf $_BUF_ Y:A -inpad ckpad Q:P");
-            run("iopadmap -bits -outpad outpad A:P -inpad inpad Q:P -tinoutpad bipad EN:Q:A:P A:top");
+            if (family == "pp3") {
+                run("clkbufmap -buf $_BUF_ Y:A -inpad ckpad Q:P");
+                run("iopadmap -bits -outpad outpad A:P -inpad inpad Q:P -tinoutpad bipad EN:Q:A:P A:top");
+            }
         }
 
         if (check_label("finalize")) {
