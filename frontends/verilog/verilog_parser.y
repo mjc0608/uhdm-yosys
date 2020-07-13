@@ -733,6 +733,15 @@ range_or_multirange:
 	range { $$ = $1; } |
 	non_opt_multirange { $$ = $1; };
 
+no_multirange: non_opt_range {
+		astbuf2->children.push_back($1);
+	} |
+	no_multirange non_opt_range {
+		astbuf2->children.push_back($2);
+	};
+
+multirange: no_multirange | /* empty */;
+
 range_or_signed_int:
 	  range 		{ $$ = $1; }
 	| TOK_INTEGER		{ $$ = makeRange(); }
@@ -1617,10 +1626,15 @@ struct_var: TOK_ID	{	auto *var_node = astbuf2->clone();
 /////////
 
 wire_decl:
-	attr wire_type range {
+	attr wire_type {
 		albuf = $1;
 		astbuf1 = $2;
-		astbuf2 = checkRange(astbuf1, $3);
+		astbuf2 = new AstNode(AST_MULTIRANGE);
+		astbuf2->is_packed = true;
+		//astbuf2 = checkRange(astbuf1, $3);
+	} multirange {
+		astbuf1->children.push_back(astbuf2);
+		astbuf2 = NULL;
 	} delay wire_name_list {
 		delete astbuf1;
 		if (astbuf2 != NULL)
@@ -1730,22 +1744,26 @@ wire_name_and_opt_assign:
 	};
 
 wire_name:
-	TOK_ID range_or_multirange {
+	TOK_ID { //range_or_multirange {
 		if (astbuf1 == nullptr)
 			frontend_verilog_yyerror("Internal error - should not happen - no AST_WIRE node.");
 		AstNode *node = astbuf1->clone();
 		node->str = *$1;
 		append_attr_clone(node, albuf);
-		if (astbuf2 != NULL)
-			node->children.push_back(astbuf2->clone());
-		if ($2 != NULL) {
-			if (node->is_input || node->is_output)
-				frontend_verilog_yyerror("input/output/inout ports cannot have unpacked dimensions.");
-			if (!astbuf2 && !node->is_custom_type) {
-				addRange(node, 0, 0, false);
-			}
-			rewriteAsMemoryNode(node, $2);
-		}
+		//if (astbuf2 != NULL)
+		//	node->children.push_back(astbuf2->clone());
+		//astbuf3 = astbuf2;
+		astbuf2 = new AstNode(AST_MULTIRANGE);
+		node->children.push_back(astbuf2);
+
+		//if ($2 != NULL) {
+		//	if (node->is_input || node->is_output)
+		//		frontend_verilog_yyerror("input/output/inout ports cannot have unpacked dimensions.");
+		//	if (!astbuf2 && !node->is_custom_type) {
+		//		addRange(node, 0, 0, false);
+		//	}
+		//	rewriteAsMemoryNode(node, $2);
+		//}
 		if (current_function_or_task == NULL) {
 			if (do_not_require_port_stubs && (node->is_input || node->is_output) && port_stubs.count(*$1) == 0) {
 				port_stubs[*$1] = ++port_counter;
@@ -1770,6 +1788,9 @@ wire_name:
 		ast_stack.back()->children.push_back(node);
 
 		delete $1;
+	} multirange {
+		//astbuf2 = astbuf3;
+		astbuf2 = NULL;
 	};
 
 assign_stmt:
