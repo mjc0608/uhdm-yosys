@@ -569,7 +569,7 @@ RTLIL::Wire *find_implicit_port_wire(Module *module, Cell *cell, const std::stri
 
 struct HierarchyPass : public Pass {
 	HierarchyPass() : Pass("hierarchy", "check, expand and clean up design hierarchy") { }
-	void help() YS_OVERRIDE
+	void help() override
 	{
 		//   |---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|
 		log("\n");
@@ -650,7 +650,7 @@ struct HierarchyPass : public Pass {
 		log("in the current design.\n");
 		log("\n");
 	}
-	void execute(std::vector<std::string> args, RTLIL::Design *design) YS_OVERRIDE
+	void execute(std::vector<std::string> args, RTLIL::Design *design) override
 	{
 		log_header(design, "Executing HIERARCHY pass (managing design hierarchy).\n");
 

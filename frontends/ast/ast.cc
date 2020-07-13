@@ -69,6 +69,7 @@ std::string AST::type2str(AstNodeType type)
 	X(AST_TASK)
 	X(AST_FUNCTION)
 	X(AST_DPI_FUNCTION)
+	X(AST_IMPORT_PACKAGE)
 	X(AST_WIRE)
 	X(AST_MEMORY)
 	X(AST_AUTOWIRE)
@@ -175,6 +176,7 @@ std::string AST::type2str(AstNodeType type)
 	X(AST_STRUCT)
 	X(AST_UNION)
 	X(AST_STRUCT_ITEM)
+	X(AST_INSIDE)
 #undef X
 	default:
 		log_abort();
@@ -211,6 +213,7 @@ AstNode::AstNode(AstNodeType type, AstNode *child1, AstNode *child2, AstNode *ch
 	is_signed = false;
 	is_string = false;
 	is_enum = false;
+	is_packed = false;
 	is_wand = false;
 	is_wor = false;
 	is_unsized = false;
@@ -422,6 +425,9 @@ void AstNode::dumpAst(FILE *f, std::string indent) const
 	}
 	if (is_enum) {
 		fprintf(f, " type=enum");
+	}
+	if (is_packed) {
+		fprintf(f, " packed");
 	}
 	fprintf(f, "\n");
 
@@ -1284,14 +1290,27 @@ void AST::process(RTLIL::Design *design, AstNode *ast, bool dump_ast1, bool dump
 	{
 		if ((*it)->type == AST_MODULE || (*it)->type == AST_INTERFACE)
 		{
-			for (auto n : design->verilog_globals)
+			// iterate over AST_MODULE nodes looking for AST_IMPORT_PACKAGE
+			std::vector<AstNode*> imported_packages;
+			std::copy_if((*it)->children.begin(), (*it)->children.end(), std::back_inserter(imported_packages), [](AstNode *v) {
+				return v->type == AST_IMPORT_PACKAGE;
+			});
+
+			for (const auto &n : design->verilog_globals)
 				(*it)->children.push_back(n->clone());
 
 			// append nodes from previous packages using package-qualified names
-			for (auto &n : design->verilog_packages) {
-				for (auto &o : n->children) {
+			for (const auto &n : design->verilog_packages) {
+				bool import_all = std::any_of(imported_packages.begin(), imported_packages.end(), [&](AstNode *v) {
+					return v->str == n->str;
+				});
+
+				for (const auto &o : n->children) {
 					AstNode *cloned_node = o->clone();
-					// log("cloned node %s\n", type2str(cloned_node->type).c_str());
+					if (import_all) {
+						(*it)->children.push_back(o->clone());
+					}
+
 					if (cloned_node->type == AST_ENUM) {
 						for (auto &e : cloned_node->children) {
 							log_assert(e->type == AST_ENUM_ITEM);
@@ -1300,6 +1319,7 @@ void AST::process(RTLIL::Design *design, AstNode *ast, bool dump_ast1, bool dump
 					} else {
 						cloned_node->str = n->str + std::string("::") + cloned_node->str.substr(1);
 					}
+
 					(*it)->children.push_back(cloned_node);
 				}
 			}

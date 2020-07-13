@@ -47,6 +47,7 @@ namespace AST
 		AST_TASK,
 		AST_FUNCTION,
 		AST_DPI_FUNCTION,
+		AST_IMPORT_PACKAGE,
 
 		AST_WIRE,
 		AST_MEMORY,
@@ -114,6 +115,7 @@ namespace AST
 		AST_LOGIC_OR,
 		AST_LOGIC_NOT,
 		AST_TERNARY,
+		AST_INSIDE,
 		AST_MEMRD,
 		AST_MEMWR,
 		AST_MEMINIT,
@@ -198,6 +200,8 @@ namespace AST
 		double realvalue;
 		// set for IDs typed to an enumeration, not used
 		bool is_enum;
+		// for AST_RANGES
+		bool is_packed;
 
 		// if this is a multirange memory then this vector contains offset and length of each dimension
 		std::vector<int> multirange_dimensions;
@@ -325,12 +329,12 @@ namespace AST
 	struct AstModule : RTLIL::Module {
 		AstNode *ast;
 		bool nolatches, nomeminit, nomem2reg, mem2reg, noblackbox, lib, nowb, noopt, icells, pwires, autowire;
-		~AstModule() YS_OVERRIDE;
-		RTLIL::IdString derive(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Const> &parameters, bool mayfail) YS_OVERRIDE;
-		RTLIL::IdString derive(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Const> &parameters, const dict<RTLIL::IdString, RTLIL::Module*> &interfaces, const dict<RTLIL::IdString, RTLIL::IdString> &modports, dict<RTLIL::IdString, RTLIL::Wire*> wires, bool mayfail) YS_OVERRIDE;
+		~AstModule() override;
+		RTLIL::IdString derive(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Const> &parameters, bool mayfail) override;
+		RTLIL::IdString derive(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Const> &parameters, const dict<RTLIL::IdString, RTLIL::Module*> &interfaces, const dict<RTLIL::IdString, RTLIL::IdString> &modports, dict<RTLIL::IdString, RTLIL::Wire*> wires, bool mayfail) override;
 		std::string derive_common(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Const> &parameters, AstNode **new_ast_out, bool quiet = false);
-		void reprocess_module(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Module *> &local_interfaces) YS_OVERRIDE;
-		RTLIL::Module *clone() const YS_OVERRIDE;
+		void reprocess_module(RTLIL::Design *design, const dict<RTLIL::IdString, RTLIL::Module *> &local_interfaces) override;
+		RTLIL::Module *clone() const override;
 		void loadconfig() const;
 	};
 
