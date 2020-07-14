@@ -2780,7 +2780,8 @@ behavioral_stmt:
 	} |
 	TOK_RETURN expr {
 		// FIXME: AST!
-	};
+	} |
+	TOK_AUTOMATIC behavioral_stmt;
 
 unique_case_attr:
 	/* empty */ {
