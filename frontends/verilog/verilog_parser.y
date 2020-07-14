@@ -2022,6 +2022,15 @@ typedef_decl:
 			rewriteAsMemoryNode(astbuf1, $5);
 		}
 		addTypedefNode($4, astbuf1); }
+	| TOK_TYPEDEF wire_type range_or_multirange type_name ';' {
+		astbuf1 = $2;
+		astbuf2 = $3;//checkRange(astbuf1, $3);
+		if (astbuf2 && astbuf2->type == AST_MULTIRANGE) {
+			astbuf2->is_packed = true;
+		}
+		if (astbuf2)
+			astbuf1->children.push_back(astbuf2);
+		addTypedefNode($4, astbuf1); }
 	| TOK_TYPEDEF non_wire_data_type type_name ';'   { addTypedefNode($3, $2); }
 	;
 
