@@ -1561,7 +1561,7 @@ param_decl_list:
 	single_param_decl | param_decl_list ',' single_param_decl;
 
 single_param_decl:
-	TOK_ID range '=' expr {
+	TOK_ID range_or_multirange '=' expr {
 		AstNode *node;
 		if (astbuf1 == nullptr) {
 			if (!sv_mode)
@@ -1570,7 +1570,11 @@ single_param_decl:
 			node->children.push_back(AstNode::mkconst_int(0, true));
 		} else {
 			if($2) {
-				if(astbuf1->children.back() && astbuf1->children.back()->type == AST_RANGE) {
+				if ($2->type == AST_MULTIRANGE) {
+					$2->is_packed = true;
+					astbuf1->children.pop_back();
+					astbuf1->children.push_back($2);
+				} else if(astbuf1->children.back() && astbuf1->children.back()->type == AST_RANGE) {
 					AstNode *multirange = new AstNode(AST_MULTIRANGE, astbuf1->children.back()->clone(), $2);
 					astbuf1->children.pop_back();
 					astbuf1->children.push_back(multirange);
