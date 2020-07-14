@@ -2260,8 +2260,16 @@ bool AstNode::simplify(bool const_fold, bool at_zero, bool in_lvalue, int stage,
 	if (type == AST_BLOCK && str.empty())
 	{
 		for (size_t i = 0; i < children.size(); i++)
-			if (children[i]->type == AST_WIRE || children[i]->type == AST_MEMORY || children[i]->type == AST_PARAMETER || children[i]->type == AST_LOCALPARAM || children[i]->type == AST_TYPEDEF)
-				log_file_error(children[i]->filename, children[i]->location.first_line, "Local declaration in unnamed block is an unsupported SystemVerilog feature!\n");
+			if (children[i]->type == AST_WIRE || children[i]->type == AST_MEMORY || children[i]->type == AST_PARAMETER || children[i]->type == AST_LOCALPARAM || children[i]->type == AST_TYPEDEF) {
+				// tranfser unnamed block into named block
+				static unsigned unnamed_block_no = 0;
+				str = std::string("$unnamed_ast_block");
+				str += std::to_string(unnamed_block_no++);
+				log_file_warning(filename, location.first_line, "transforming into named bblock %s\n", str.c_str());
+				did_something = true;
+				//log_file_error(children[i]->filename, children[i]->location.first_line, "Local declaration in unnamed block is an unsupported SystemVerilog feature!\n");
+				break;
+			}
 	}
 
 	// transform block with name
