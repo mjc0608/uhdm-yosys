@@ -336,6 +336,7 @@ static void addGenvar() {
 %type <boolean> opt_signed opt_property unique_case_attr always_comb_or_latch always_or_always_ff
 %type <al> attr case_attr
 %type <ast> struct_union
+%type <ast> opt_typedef
 
 %type <specify_target_ptr> specify_target
 %type <specify_triple_ptr> specify_triple specify_opt_triple
@@ -908,24 +909,30 @@ task_func_decl:
 		current_function_or_task = NULL;
 		ast_stack.pop_back();
 	} |
-	attr TOK_FUNCTION opt_automatic opt_signed range_or_signed_int TOK_ID {
+	attr TOK_FUNCTION opt_automatic opt_signed opt_typedef range_or_signed_int TOK_ID {
 		current_function_or_task = new AstNode(AST_FUNCTION);
-		current_function_or_task->str = *$6;
+		current_function_or_task->str = *$7;
 		append_attr(current_function_or_task, $1);
 		ast_stack.back()->children.push_back(current_function_or_task);
 		ast_stack.push_back(current_function_or_task);
 		AstNode *outreg = new AstNode(AST_WIRE);
-		outreg->str = *$6;
+		outreg->str = *$7;
 		outreg->is_signed = $4;
 		outreg->is_reg = true;
 		if ($5 != NULL) {
+			outreg->is_custom_type = true;
 			outreg->children.push_back($5);
-			outreg->is_signed = $4 || $5->is_signed;
-			$5->is_signed = false;
 		}
+		if ($6 != NULL) {
+			outreg->children.push_back($6);
+			outreg->is_signed = $4 || $6->is_signed;
+			$6->is_signed = false;
+		}
+
+		log_assert(($5 == NULL) || ($6 == NULL));
 		current_function_or_task->children.push_back(outreg);
 		current_function_or_task_port_id = 1;
-		delete $6;
+		delete $7;
 	} task_func_args_opt ';' task_func_body TOK_ENDFUNCTION opt_label {
 		current_function_or_task = NULL;
 		ast_stack.pop_back();
@@ -962,6 +969,15 @@ opt_signed:
 	} |
 	/* empty */ {
 		$$ = false;
+	};
+
+opt_typedef:
+	TOK_USER_TYPE {
+		$$ = new AstNode(AST_WIRETYPE);
+		$$->str = *$1;
+	} |
+	/* empty */ {
+		$$ = NULL;
 	};
 
 task_func_args_opt:
