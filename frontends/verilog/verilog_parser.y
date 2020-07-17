@@ -2640,6 +2640,11 @@ rvalue:
 				$$->str == "\\$anyconst" || $$->str == "\\$anyseq" ||
 				$$->str == "\\$allconst" || $$->str == "\\$allseq"))
 			$$->type = AST_FCALL;
+		else if ($2 != nullptr && $2->type == AST_RANGE) {
+			// identifier might be multirange array
+			// wrap it up in AST_MULTIRANGE so multirange access simplification will process this
+			$$->children[0] = new AstNode(AST_MULTIRANGE, $2);
+		}
 	} |
 	hierarchical_id non_opt_multirange {
 		$$ = new AstNode(AST_IDENTIFIER, $2);
