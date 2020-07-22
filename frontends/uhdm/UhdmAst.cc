@@ -633,6 +633,8 @@ AST::AstNode* UhdmAst::visit_object (
 		}
 		case vpiContAssign: {
 			current_node->type = AST::AST_ASSIGN;
+			UhdmAstContext new_context(context);
+			new_context["assign_node"] = current_node;
 			visit_one_to_one({vpiLhs, vpiRhs},
 					obj_h,
 					visited,
