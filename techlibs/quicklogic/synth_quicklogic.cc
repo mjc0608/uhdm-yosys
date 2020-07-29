@@ -133,10 +133,9 @@ struct SynthQuicklogicPass : public ScriptPass
 		{
             if (inferAdder)
 			{
-		    run("techmap -map +/techmap.v -map +/quicklogic/" + family + "_arith_map.v");
-			} else {
-				run("techmap -map +/techmap.v");
-			}
+		    	run("techmap -map +/quicklogic/" + family + "_arith_map.v");
+			} 
+			run("techmap -map +/techmap.v");
 			run("opt -fast");
 		}
 
