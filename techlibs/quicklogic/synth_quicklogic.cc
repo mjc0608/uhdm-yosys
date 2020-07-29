@@ -6,28 +6,26 @@
 USING_YOSYS_NAMESPACE
 PRIVATE_NAMESPACE_BEGIN
 
-struct SynthQuicklogicPass : public ScriptPass
-{
-	SynthQuicklogicPass() : ScriptPass("synth_quicklogic", "synthesis for Quicklogic FPGAs") { }
+struct SynthQuickLogicPass : public ScriptPass {
 
-	void help() YS_OVERRIDE
+	SynthQuickLogicPass() : ScriptPass("synth_quicklogic", "Synthesis for QuickLogic FPGAs") {}
+
+	void help() override
 	{
-		//   |---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|
 		log("\n");
-		log("    synth_quicklogic [options]\n");
-		log("\n");
-		log("This command runs synthesis for Quicklogic FPGAs.\n");
+		log("   synth_quicklogic [options]\n");
+		log("This command runs synthesis for QuickLogic FPGAs\n");
 		log("\n");
 		log("    -top <module>\n");
-		log("        use the specified module as top module\n");
+		log("         use the specified module as top module\n");
 		log("\n");
-        log("    -family <family>\n");
-        log("        run synthesis for the specified QuickLogic architecture\n");
-        log("        generate the synthesis netlist for the specified family.\n");
-        log("        supported values:\n");
-        log("        - pp3: PolarPro 3 \n");
-        log("        - ap3: ArcticPro 3 \n");
-        log("\n");
+		log("    -family <family>\n");
+		log("        run synthesis for the specified QuickLogic architecture\n");
+		log("        generate the synthesis netlist for the specified family.\n");
+		log("        supported values:\n");
+		log("        - pp3: PolarPro 3 \n");
+		log("        - ap3: ArcticPro 3 \n");
+		log("\n");
         log("    -edif <file>\n");
         log("        write the design to the specified edif file. writing of an output file\n");
         log("        is omitted if this parameter is not specified.\n");
@@ -73,6 +71,7 @@ struct SynthQuicklogicPass : public ScriptPass
                 edif_file = args[++argidx];
                 continue;
             }
+
             if (args[argidx] == "-family" && argidx+1 < args.size()) {
                 family = args[++argidx];
                 continue;
@@ -100,7 +99,7 @@ struct SynthQuicklogicPass : public ScriptPass
         log_pop();
     }
 
-    void script() YS_OVERRIDE
+   void script() YS_OVERRIDE
     {
         if (check_label("begin"))
         {
@@ -186,7 +185,7 @@ struct SynthQuicklogicPass : public ScriptPass
         {
             std::string techMapArgs = " -map +/quicklogic/cells_map.v";
             techMapArgs += " -map +/quicklogic/" + family + "_cells_map.v";
-            run("techmap" + techMapArgs);
+           run("techmap" + techMapArgs);
             run("clean");
         }
 
@@ -227,6 +226,7 @@ struct SynthQuicklogicPass : public ScriptPass
                 run(stringf("write_blif %s %s", top_opt.c_str(), blif_file.c_str()));
         }
     }
+
 } SynthQuicklogicPass;
 
 PRIVATE_NAMESPACE_END
