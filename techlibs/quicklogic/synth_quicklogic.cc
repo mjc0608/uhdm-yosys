@@ -113,7 +113,7 @@ struct SynthQuickLogicPass : public ScriptPass
         }
 
         if (check_label("iomap")) {
-            run("clkbufmap -buf $_BUF_ Y:A -inpad ckpad Q:P");
+            run("clkbufmap -inpad ckpad Q:P");
             run("iopadmap -bits -outpad outpad A:P -inpad inpad Q:P -tinoutpad bipad EN:Q:A:P -toutpad bipad EN:A:P A:top");
         }
 
