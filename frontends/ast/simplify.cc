@@ -899,6 +899,73 @@ bool AstNode::simplify(bool const_fold, bool at_zero, bool in_lvalue, int stage,
 				if (!is_rand_reg)
 					log_warning("reg '%s' is assigned in a continuous assignment at %s:%d.%d-%d.%d.\n", children[0]->str.c_str(), filename.c_str(), location.first_line, location.first_column, location.last_line, location.last_column);
 			}
+
+			// Copy unpacked array
+			if (children[0]->id2ast->type == AST_MEMORY &&
+					children[1]->type == AST_IDENTIFIER && children[1]->id2ast && children[1]->id2ast->type == AST_MEMORY &&
+					children[0]->children.size() == 0 && children[1]->children.size() == 0) {
+				const auto& lhs_unpacked_range = children[0]->id2ast->children[1];
+				log_assert(lhs_unpacked_range->basic_prep);
+				const auto& rhs_unpacked_range = children[1]->id2ast->children[1];
+				log_assert(rhs_unpacked_range->basic_prep);
+
+				const auto lhs_width = lhs_unpacked_range->range_left - lhs_unpacked_range->range_right + 1;
+				const auto rhs_width = rhs_unpacked_range->range_left - rhs_unpacked_range->range_right + 1;
+
+				if (lhs_width != rhs_width)
+					log_error("Array '%s' and '%s' differs in size: %s:%d.%d-%d.%d.\n",
+						children[0]->str.c_str(), children[1]->str.c_str(), filename.c_str(),
+						location.first_line, location.first_column, location.last_line, location.last_column);
+
+				// Create template from assignment
+				const auto* tmpl = this->clone();
+
+				// Replace assignment with block
+				auto* block = this;
+				switch (type)
+				{
+				case AST_ASSIGN_EQ:
+				case AST_ASSIGN_LE:
+					block->type = AST_BLOCK;
+					break;
+
+				case AST_ASSIGN:
+					block->type = AST_GENBLOCK;
+					break;
+
+				default: // should not happen
+					log_assert(false);
+					break;
+				}
+				block->children.clear();
+
+				// Generate series of assignments
+				for (int i = 0 ; i < lhs_width ; ++i) {
+					auto* assign = tmpl->clone();
+					assign->children[0]->children.push_back(new AstNode(AST_RANGE));
+					assign->children[0]->children[0]->children.push_back(AstNode::mkconst_int(i + lhs_unpacked_range->range_right, true));
+
+					assign->children[1]->children.push_back(new AstNode(AST_RANGE));
+					assign->children[1]->children[0]->children.push_back(AstNode::mkconst_int(i + rhs_unpacked_range->range_right, true));
+
+					// simplify
+					assign->children[0]->basic_prep = false;
+					while (!assign->children[0]->basic_prep && assign->children[0]->simplify(false, false, true, stage, -1, false, in_param) == true)
+						did_something = true;
+					assign->children[1]->basic_prep = false;
+					while (!assign->children[1]->basic_prep && assign->children[1]->simplify(false, false, true, stage, -1, false, in_param) == true)
+						did_something = true;
+
+					assign->children[0]->was_checked = true;
+					assign->children[1]->was_checked = true;
+
+					block->children.push_back(assign);
+				}
+
+				log_assert((size_t)block->children.size() == (size_t)lhs_width);
+				did_something = true;
+			}
+
 			children[0]->was_checked = true;
 		}
 		break;
