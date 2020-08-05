@@ -962,7 +962,7 @@ bool AstNode::simplify(bool const_fold, bool at_zero, bool in_lvalue, int stage,
 					block->children.push_back(assign);
 				}
 
-				log_assert((size_t)block->children.size() == (size_t)lhs_width);
+				log_assert(GetSize(block->children) == lhs_width);
 				did_something = true;
 			}
 
