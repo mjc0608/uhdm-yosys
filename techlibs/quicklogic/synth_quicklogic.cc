@@ -115,14 +115,13 @@ struct SynthQuickLogicPass : public ScriptPass {
             run("opt_clean");
             run("deminout");
             run("opt");
-        }
-
-        if (check_label("coarse")) {
-            run("opt_expr");
+            run("memory -nomap");
             run("opt_clean");
-            run("check");
-            run("opt");
-            run("wreduce -keepdc");
+            if (check_label("map_bram", "(skip if -nobram)"))
+            {
+               run("memory_bram -rules +/quicklogic/" + family + "_brams.txt");
+               run("techmap -map +/quicklogic/" + family + "_brams_map.v");
+            }
             run("peepopt");
             run("pmuxtree");
             run("opt_clean");
