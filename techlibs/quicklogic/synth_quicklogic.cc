@@ -154,6 +154,7 @@ struct SynthQuickLogicPass : public ScriptPass {
             } else {
                 run("techmap");
             }
+            run("techmap");
             run("opt -fast");
             if (family == "pp3") {
                 run("muxcover -mux8 -mux4");
