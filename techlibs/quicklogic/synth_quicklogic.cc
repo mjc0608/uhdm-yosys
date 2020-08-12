@@ -127,7 +127,6 @@ struct SynthQuickLogicPass : public ScriptPass
                run("memory_bram -rules +/quicklogic/" + family + "_brams.txt");
                run("techmap -map +/quicklogic/" + family + "_brams_map.v");
             }
-            run("peepopt");
             run("techmap");
             run("opt -fast");
             if (family == "pp3") {
