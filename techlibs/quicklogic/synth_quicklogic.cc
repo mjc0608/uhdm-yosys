@@ -115,13 +115,14 @@ struct SynthQuickLogicPass : public ScriptPass {
             run("opt_clean");
             run("deminout");
             run("opt");
-            run("memory -nomap");
+        }
+
+        if (check_label("coarse")) {
+            run("opt_expr");
             run("opt_clean");
-            if (check_label("map_bram", "(skip if -nobram)"))
-            {
-               run("memory_bram -rules +/quicklogic/" + family + "_brams.txt");
-               run("techmap -map +/quicklogic/" + family + "_brams_map.v");
-            }
+            run("check");
+            run("opt");
+            run("wreduce -keepdc");
             run("peepopt");
             run("pmuxtree");
             run("opt_clean");
@@ -138,6 +139,11 @@ struct SynthQuickLogicPass : public ScriptPass {
             run("opt_clean");
         }
 
+        if (check_label("map_bram", "(skip if -nobram)")) {
+            run("memory_bram -rules +/quicklogic/" + family + "_brams.txt");
+            run("techmap -map +/quicklogic/" + family + "_brams_map.v");
+        }
+		
         if (check_label("map_ffram")) {
             run("opt -fast -mux_undef -undriven -fine");
             run("memory_map -iattr -attr !ram_block -attr !rom_block -attr logic_block "
@@ -147,72 +153,41 @@ struct SynthQuickLogicPass : public ScriptPass {
         }
 
         if (check_label("map_gates")) {
-            if (inferAdder && family != "pp3")
-            {
-                run("ap3_wrapcarry");
-                run("techmap -map +/techmap.v -map +/quicklogic/" + family + "_arith_map.v");
-            } else {
-                run("techmap");
-            }
             run("techmap");
             run("opt -fast");
-            if (family == "pp3") {
-                run("muxcover -mux8 -mux4");
-            }
-            if(family != "pp3") {
-                run("ap3_opt");
-            } else {
-                run("opt_expr -clkinv");
-                run("opt -fast");
-                run("opt_expr");
-                run("opt_merge");
-                run("opt_rmdff");
-                run("opt_clean");
-                run("opt");
-            }
+            run("muxcover -mux8 -mux4");
+            run("opt_expr -clkinv");
+            run("opt -fast");
+            run("opt_expr");
+            run("opt_merge");
+            run("opt_rmdff");
+            run("opt_clean");
+            run("opt");
         }
 
         if (check_label("map_ffs")) {
-            if (family == "pp3") {
-                run("dff2dffe");
-            } else {
-                run("dff2dffe -direct-match $_DFF_*");
-            }
+			run("opt_expr -clkinv");
+            run("dff2dffe");
 
             std::string techMapArgs = " -map +/quicklogic/" + family + "_ffs_map.v";
             run("techmap " + techMapArgs);
             run("opt_expr -mux_undef");
             run("simplemap");
-            if(family != "pp3") {
-                run("ap3_opt -full");
-            } else {
-                run("opt_expr");
-                run("opt_merge");
-                run("opt_rmdff");
-                run("opt_clean");
-                run("opt");
-            }
+            run("opt_expr");
+            run("opt_merge");
+            run("opt_rmdff");
+            run("opt_clean");
+            run("opt");
         }
 
         if (check_label("map_luts")) {
             std::string techMapArgs = " -map +/quicklogic/" + family + "_latches_map.v";
             run("techmap " + techMapArgs);
-            if (family == "pp3") {
-                run("abc -lut 4"); // -luts 1,2,2
-            } else if (family == "ap2") {
-                run("abc -dress -lut 4:5 -dff"); //-luts 5,4,4,1,3
-            } else {
-                //run("nlutmap -luts N_4");
-                run("abc -dress -lut 4 -dff");
-            }
+            run("abc -lut 4"); // -luts 1,2,2
 
-            if(family != "pp3") {
-                run("ap3_wrapcarry -unwrap");
-            }
             techMapArgs = " -map +/quicklogic/" + family + "_ffs_map.v";
             run("techmap " + techMapArgs);
             run("clean");
-            run("opt_lut -dlogic QL_CARRY:I0=2:I1=1:CI=0");
         }
 
         if (check_label("map_cells")) {
@@ -230,7 +205,7 @@ struct SynthQuickLogicPass : public ScriptPass {
             run("stat");
             run("check -noinit");
         }
-
+        
         if (check_label("iomap")) {
             if (family == "pp3") {
                 run("clkbufmap -buf $_BUF_ Y:A -inpad ckpad Q:P");
