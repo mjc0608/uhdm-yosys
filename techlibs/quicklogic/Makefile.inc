@@ -2,11 +2,11 @@
 OBJS += techlibs/quicklogic/synth_quicklogic.o
 OBJS += techlibs/quicklogic/quicklogic_eqn.o
 
-$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_ffs_map.v))
-$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_lut_map.v))
-$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_latches_map.v))
-GENFILES += techlibs/quicklogic/brams_init_9.vh
-GENFILES += techlibs/quicklogic/brams_init_18.vh
+$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/ffs_map.v))
+$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/lut_map.v))
+GENFILES += techlibs/quicklogic/bram_init_8_16.vh
+GENFILES += techlibs/quicklogic/bram_init_32.vh
+
 
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_cells_map.v))
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_brams.txt))
@@ -27,9 +27,9 @@ techlibs/quicklogic/brams_init.mk: techlibs/quicklogic/brams_init.py
 	$(Q) touch $@
 
 
-techlibs/quicklogic/brams_init_9.vh: techlibs/quicklogic/brams_init.mk
-techlibs/quicklogic/brams_init_18.vh: techlibs/quicklogic/brams_init.mk
+techlibs/quicklogic/bram_init_8_16.vh: techlibs/quicklogic/brams_init.mk
+techlibs/quicklogic/bram_init_32.vh: techlibs/quicklogic/brams_init.mk
 
-$(eval $(call add_gen_share_file,share/quicklogic,techlibs/quicklogic/brams_init_9.vh))
-$(eval $(call add_gen_share_file,share/quicklogic,techlibs/quicklogic/brams_init_18.vh))
+$(eval $(call add_gen_share_file,share/quicklogic,techlibs/quicklogic/bram_init_8_16.vh))
+$(eval $(call add_gen_share_file,share/quicklogic,techlibs/quicklogic/bram_init_32.vh))
 
