@@ -356,7 +356,6 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 				log_error("Module `%s' referenced in module `%s' in cell `%s' is a blackbox/whitebox module.\n",
 						cell->type.c_str(), module->name.c_str(), cell->name.c_str());
 			cell->set_bool_attribute("\\is_interface");
-			interfaces_in_module[cell->name] = mod;
 			continue;
 		}
 
