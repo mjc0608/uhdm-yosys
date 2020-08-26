@@ -1,3 +1,21 @@
+/*
+ *  yosys -- Yosys Open SYnthesis Suite
+ *
+ *  Copyright (C) 2020 Karol Gugala <kgugala@antmicro.com>
+ *
+ *  Permission to use, copy, modify, and/or distribute this software for any
+ *  purpose with or without fee is hereby granted, provided that the above
+ *  copyright notice and this permission notice appear in all copies.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ *  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ *  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ *  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ *  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ *  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ *  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ */
 #include "kernel/register.h"
 #include "kernel/celltypes.h"
 #include "kernel/rtlil.h"
@@ -127,10 +145,6 @@ struct SynthQuickLogicPass : public ScriptPass {
             run("peepopt");
             run("pmuxtree");
             run("opt_clean");
-            run("share");
-            run("techmap -map +/cmp2lut.v -D LUT_WIDTH=4");
-            run("opt_expr");
-            run("opt_clean");
 
             run("alumacc");
             run("opt");
@@ -140,6 +154,13 @@ struct SynthQuickLogicPass : public ScriptPass {
             run("opt_clean");
         }
 
+        if (check_label("map_bram", "(skip if -nobram)")) {
+            if(family == "pp3") {
+                run("memory_bram -rules +/quicklogic/" + family + "_brams.txt");
+                run("techmap -map +/quicklogic/" + family + "_brams_map.v");
+            }
+        }
+		
         if (check_label("map_ffram")) {
             run("opt -fast -mux_undef -undriven -fine");
             run("memory_map -iattr -attr !ram_block -attr !rom_block -attr logic_block "
@@ -175,6 +196,7 @@ struct SynthQuickLogicPass : public ScriptPass {
 
         if (check_label("map_ffs")) {
             if (family == "pp3") {
+                run("opt_expr -clkinv");
                 run("dff2dffe");
             } else {
                 run("dff2dffe -direct-match $_DFF_*");
@@ -199,21 +221,23 @@ struct SynthQuickLogicPass : public ScriptPass {
             std::string techMapArgs = " -map +/quicklogic/" + family + "_latches_map.v";
             run("techmap " + techMapArgs);
             if (family == "pp3") {
-                run("abc -lut 4"); // -luts 1,2,2
+                run("abc -luts 1,2,2,4:8");
             } else if (family == "ap2") {
                 run("abc -dress -lut 4:5 -dff"); //-luts 5,4,4,1,3
             } else {
-                //run("nlutmap -luts N_4");
                 run("abc -dress -lut 4 -dff");
             }
 
             if(family != "pp3") {
                 run("ap3_wrapcarry -unwrap");
             }
+
             techMapArgs = " -map +/quicklogic/" + family + "_ffs_map.v";
             run("techmap " + techMapArgs);
             run("clean");
-            run("opt_lut -dlogic QL_CARRY:I0=2:I1=1:CI=0");
+            if(family != "pp3") {
+                run("opt_lut -dlogic QL_CARRY:I0=2:I1=1:CI=0");
+            }
         }
 
         if (check_label("map_cells")) {
@@ -231,7 +255,7 @@ struct SynthQuickLogicPass : public ScriptPass {
             run("stat");
             run("check -noinit");
         }
-
+        
         if (check_label("iomap")) {
             if (family == "pp3") {
                 run("clkbufmap -buf $_BUF_ Y:A -inpad ckpad Q:P");
@@ -246,7 +270,7 @@ struct SynthQuickLogicPass : public ScriptPass {
             run("splitnets -ports -format ()");
             run("setundef -zero -params -undriven");
             run("hilomap -hicell logic_1 a -locell logic_0 a -singleton A:top");
-            run("opt_clean");
+            run("opt_clean -purge");
             run("check");
         }
 
