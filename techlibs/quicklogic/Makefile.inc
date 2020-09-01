@@ -10,8 +10,9 @@ GENFILES += techlibs/quicklogic/bram_init_32.vh
 
 
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_cells_map.v))
-$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_brams.txt))
-$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_brams_map.v))
+$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/ap3_arith_map.v))
+$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/ap2_arith_map.v))
+$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/ap2_io_map.v))
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/cells_sim.v))
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_cells_sim.v))
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/MULT_16BIT_X2.v))
