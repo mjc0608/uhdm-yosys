@@ -172,7 +172,7 @@ struct SynthQuickLogicPass : public ScriptPass {
         if (check_label("map_gates")) {
             if (inferAdder && family != "pp3")
             {
-                run("quicklogic_fixcarry");
+                //run("quicklogic_fixcarry");
                 run("techmap -map +/techmap.v -map +/quicklogic/" + family + "_arith_map.v");
             } else {
                 run("techmap");
@@ -216,7 +216,17 @@ struct SynthQuickLogicPass : public ScriptPass {
         if (check_label("map_luts")) {
             std::string techMapArgs = " -map +/quicklogic/" + family + "_latches_map.v";
             run("techmap " + techMapArgs);
-            run("abc -luts 1,2,2,4:8");
+            if (family == "pp3") {
+                run("abc -luts 1,2,2,4:8");
+            } else if (family == "ap2") {
+                run("abc -dress -lut 4:5 -dff"); //-luts 5,4,4,1,3
+            } else {
+                run("abc -dress -lut 4 -dff");
+            }
+
+            if(family != "pp3") {
+                //run("ap3_wrapcarry -unwrap");
+            }
 
             techMapArgs = " -map +/quicklogic/" + family + "_ffs_map.v";
             run("techmap " + techMapArgs);
