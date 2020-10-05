@@ -1,0 +1,27 @@
+logger -expect-no-warnings
+read_ilang <<EOT
+attribute \cells_not_processed 1
+module \top
+  wire width 2 output 1 \leds
+
+  wire \wrap2.o_out
+
+  cell $mux $xx
+    parameter \WIDTH 1
+    connect \A 1'z
+    connect \B 1'1
+    connect \S 1'0
+    connect \Y \leds [0]
+  end
+
+  connect \wrap2.o_out \leds [0]
+end
+EOT
+
+# check that the 'Y' of $xx drives 'leds' wire
+select -assert-count 1 */c:$xx %x:+[Y] */c:$xx %d w:leds %i
+
+opt_clean
+
+# optimization shouldn't break this
+select -assert-count 1 */c:$xx %x:+[Y] */c:$xx %d w:leds %i

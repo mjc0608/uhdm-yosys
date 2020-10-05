@@ -291,7 +291,14 @@ bool rmunused_module_signals(RTLIL::Module *module, bool purge_mode, bool verbos
 	for (auto &it : module->cells_) {
 		RTLIL::Cell *cell = it.second;
 		for (auto &it2 : cell->connections_) {
-			assign_map.apply(it2.second);
+			bool skip_assign = false;
+			if (!it2.second.is_wire()) {
+				const auto& chunks = it2.second.chunks();
+				if (chunks.size() > 0 && chunks[0].wire)
+					skip_assign = chunks[0].wire->port_id > 0 && chunks[0].wire->port_output;
+			}
+			if (!skip_assign)
+				assign_map.apply(it2.second);
 			raw_used_signals.add(it2.second);
 			used_signals.add(it2.second);
 			if (!ct_all.cell_output(cell->type, it2.first))
