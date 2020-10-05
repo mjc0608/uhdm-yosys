@@ -272,6 +272,10 @@ bool rmunused_module_signals(RTLIL::Module *module, bool purge_mode, bool verbos
 	for (auto &it : module->wires_) {
 		if (direct_sigs.count(assign_map(it.second)) || it.second->port_input)
 			direct_wires.insert(it.second);
+		else
+			for (const auto& chunk : assign_map(it.second))
+				if (chunk.wire && direct_sigs.count(assign_map(chunk.wire)))
+					direct_wires.insert(it.second);
 	}
 
 	for (auto &it : module->wires_) {
