@@ -24,8 +24,16 @@ $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/ap2_io_map.v))
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/ap3_io_map.v))
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/cells_sim.v))
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_cells_sim.v))
+
+$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/ap3_cells_sim.v))
+$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/ap2_cells_sim.v))
+
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/MULT_16BIT_X2.v))
 $(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/MULT_32BIT.v))
+$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/abc9_model.v))
+$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_brams.txt))
+$(eval $(call add_share_file,share/quicklogic,techlibs/quicklogic/pp3_brams_map.v))
+
 
 EXTRA_OBJS += techlibs/quicklogic/brams_init.mk 
 .SECONDARY: techlibs/quicklogic/brams_init.mk 

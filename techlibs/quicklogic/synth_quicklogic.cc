@@ -90,6 +90,7 @@ struct SynthQuickLogicPass : public ScriptPass {
                 edif_file = args[++argidx];
                 continue;
             }
+
             if (args[argidx] == "-family" && argidx+1 < args.size()) {
                 family = args[++argidx];
                 continue;
@@ -195,8 +196,12 @@ struct SynthQuickLogicPass : public ScriptPass {
         }
 
         if (check_label("map_ffs")) {
-			run("opt_expr -clkinv");
-            run("dff2dffe");
+            if (family == "pp3") {
+                run("opt_expr -clkinv");
+                run("dff2dffe");
+            } else {
+                run("dff2dffe -direct-match $_DFF_*");
+            }
 
             std::string techMapArgs = " -map +/quicklogic/" + family + "_ffs_map.v";
             run("techmap " + techMapArgs);
@@ -231,6 +236,9 @@ struct SynthQuickLogicPass : public ScriptPass {
             techMapArgs = " -map +/quicklogic/" + family + "_ffs_map.v";
             run("techmap " + techMapArgs);
             run("clean");
+            if(family != "pp3") {
+                run("opt_lut -dlogic QL_CARRY:I0=2:I1=1:CI=0");
+            }
         }
 
         if (check_label("map_cells")) {
@@ -265,7 +273,7 @@ struct SynthQuickLogicPass : public ScriptPass {
             run("splitnets -ports -format ()");
             run("setundef -zero -params -undriven");
             run("hilomap -hicell logic_1 a -locell logic_0 a -singleton A:top");
-            run("opt_clean");
+            run("opt_clean -purge");
             run("check");
         }
 
@@ -280,6 +288,7 @@ struct SynthQuickLogicPass : public ScriptPass {
         }
 
     }
+
 } SynthQuicklogicPass;
 
 PRIVATE_NAMESPACE_END
