@@ -64,7 +64,7 @@ struct SynthQuickLogicPass : public ScriptPass {
     string top_opt, edif_file, blif_file, family, currmodule;
     bool inferAdder;
 
-    void clear_flags() YS_OVERRIDE
+    void clear_flags() override
     {
         top_opt = "-auto-top";
         edif_file = "";
@@ -74,7 +74,7 @@ struct SynthQuickLogicPass : public ScriptPass {
         inferAdder = false;
     }
 
-    void execute(std::vector<std::string> args, RTLIL::Design *design) YS_OVERRIDE
+    void execute(std::vector<std::string> args, RTLIL::Design *design) override
     {
         string run_from, run_to;
         clear_flags();
@@ -118,7 +118,7 @@ struct SynthQuickLogicPass : public ScriptPass {
         log_pop();
     }
 
-    void script() YS_OVERRIDE
+    void script() override
     {
         if (check_label("begin")) {
             std::string readVelArgs = " +/quicklogic/" + family + "_cells_sim.v";

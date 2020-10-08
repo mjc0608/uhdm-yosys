@@ -54,7 +54,7 @@ static void fix_carry_chain(Module *module)
 
 struct QuicklogicCarryFixPass : public Pass {
 	QuicklogicCarryFixPass() : Pass("quicklogic_fixcarry", "Quicklogic: fix carry chain") { }
-	void help() YS_OVERRIDE
+	void help() override
 	{
 		//   |---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|
 		log("\n");
@@ -63,7 +63,7 @@ struct QuicklogicCarryFixPass : public Pass {
 		log("Add Quicklogic adders to fix carry chain if needed.\n");
 		log("\n");
 	}
-	void execute(std::vector<std::string> args, RTLIL::Design *design) YS_OVERRIDE
+	void execute(std::vector<std::string> args, RTLIL::Design *design) override
 	{
 		log_header(design, "Executing QUICKLOGIC_FIXCARRY pass (fix invalid carry chain).\n");
 		
