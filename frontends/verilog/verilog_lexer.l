@@ -306,7 +306,7 @@ static bool isUserType(std::string &s)
 	return TOK_BASE;
 }
 
-<BASED_CONST>[0-9a-fA-FzxZX?][0-9a-fA-FzxZX?_]* {
+<BASED_CONST>[_]*[0-9a-fA-FzxZX?][0-9a-fA-FzxZX?_]* {
 	BEGIN(0);
 	yylval->string = new std::string(yytext);
 	return TOK_BASED_CONSTVAL;
