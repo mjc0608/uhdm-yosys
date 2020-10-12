@@ -21,4 +21,3 @@ module my_dffp ( input d, clk, pre, output reg q );
         else
             q <= d;
 endmodule
-

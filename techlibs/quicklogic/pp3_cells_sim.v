@@ -5817,5 +5817,3 @@ endgenerate
   assign DOUT[data_width_int-1 :0]= out_reg0[data_width_int-1 :0];
 
 endmodule
-
-

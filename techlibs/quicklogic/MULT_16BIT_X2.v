@@ -1,6 +1,6 @@
 module MULT_16BIT_X2 ( Amult1, Bmult1, Valid_mult1, Cmult1,
-					   Amult2, Bmult2, Valid_mult2, Cmult2
-					  );
+                       Amult2, Bmult2, Valid_mult2, Cmult2
+                     );
 
 input [15:0] Amult1;
 input [15:0] Bmult1;
@@ -23,14 +23,12 @@ assign bmult_int = {Bmult2,Bmult1};
 assign Cmult1 = cmult_int[31:0];
 assign Cmult2 = cmult_int[63:32];
 
-//qlal4s3_mult_cell_macro 
-qlal4s3_mult_cell_macro u_qlal4s3_mult_cell_macro
-												( 
-													.Amult			(amult_int), 
-													.Bmult			(bmult_int), 
-													.Valid_mult		(valit_int),
-													.sel_mul_32x32  (1'b0),							
-													.Cmult			(cmult_int)
-												);
+//qlal4s3_mult_cell_macro
+qlal4s3_mult_cell_macro u_qlal4s3_mult_cell_macro (
+    .Amult(amult_int),
+    .Bmult(bmult_int),
+    .Valid_mult(valit_int),
+    .sel_mul_32x32(1'b0),
+    .Cmult(cmult_int)
+);
 endmodule
-

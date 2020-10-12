@@ -1,4 +1,3 @@
-
 module inv(output Q, input A);
     assign Q = A ? 0 : 1;
 endmodule
@@ -21,4 +20,3 @@ module gclkbuff (input A, output Z);
 assign Z = A;
 
 endmodule
-
