@@ -379,6 +379,7 @@ AST::AstNode* UhdmAst::handle_module(vpiHandle obj_h, AstNodeList& parent) {
 									  add_or_replace_child(current_node, node);
 								  }
 							  });
+			//resolve_wiretypes(current_node);
 			current_node->attributes.erase(ID::partial);
 			return current_node;
 		} else {
@@ -816,26 +817,22 @@ AST::AstNode* UhdmAst::handle_io_decl(vpiHandle obj_h, AstNodeList& parent) {
 
 AST::AstNode* UhdmAst::handle_always(vpiHandle obj_h, AstNodeList& parent) {
 	auto current_node = make_ast_node(AST::AST_ALWAYS, obj_h);
+	visit_one_to_one({vpiStmt},
+		obj_h, {&parent, current_node},
+		[&](AST::AstNode* node) {
+			if (node) {
+				current_node->children.push_back(node);
+			}
+		});
 	switch (vpi_get(vpiAlwaysType, obj_h)) {
 		case vpiAlwaysComb:
-		case vpiAlwaysFF: {
-			visit_one_to_one({vpiStmt},
-							 obj_h, {&parent, current_node},
-							 [&](AST::AstNode* node) {
-								 current_node->children.push_back(node);
-							 });
+			current_node->attributes[ID::always_comb] = AST::AstNode::mkconst_int(1, false); break;
+		case vpiAlwaysFF:
+			current_node->attributes[ID::always_ff] = AST::AstNode::mkconst_int(1, false); break;
+		case vpiAlwaysLatch:
+			current_node->attributes[ID::always_latch] = AST::AstNode::mkconst_int(1, false); break;
+		default:
 			break;
-		}
-		default: {
-			visit_one_to_one({vpiStmt},
-							 obj_h, {&parent, current_node},
-							 [&](AST::AstNode* node) {
-								 if (node) {
-									 current_node->children.push_back(node);
-								 }
-							 });
-			break;
-		}
 	}
 	return current_node;
 }
@@ -1249,21 +1246,30 @@ AST::AstNode* UhdmAst::handle_if_else(vpiHandle obj_h, AstNodeList& parent) {
 
 AST::AstNode* UhdmAst::handle_for(vpiHandle obj_h, AstNodeList& parent) {
 	auto current_node = make_ast_node(AST::AST_FOR, obj_h);
-	AST::AstNode* loop_parent_node = parent.find({AST::AST_ALWAYS, AST::AST_FUNCTION, AST::AST_TASK});
+	auto loop_id = shared.next_loop_id();
+	current_node->str = "$loop" + std::to_string(loop_id);
+	auto loop_parent_node = parent.find({AST::AST_FUNCTION, AST::AST_TASK, AST::AST_MODULE});
+	AST::AstNode* counter = nullptr;
 	visit_one_to_many({vpiForInitStmt},
 					  obj_h, {&parent, current_node},
 					  [&](AST::AstNode* node) {
 						  current_node->children.push_back(node);
-						  auto wire_node = new AST::AstNode(AST::AST_WIRE);
-						  wire_node->range_left=31;
-						  wire_node->is_reg=true;
-						  wire_node->str = node->children[0]->str;
-						  loop_parent_node->children.push_back(wire_node);
+						  counter = new AST::AstNode(AST::AST_WIRE);
+						  counter->range_left = 31;
+						  counter->is_reg = true;
+						  counter->is_signed = true;
+						  counter->str = node->children[0]->str;
+						  loop_parent_node->children.push_back(counter);
 					  });
 	visit_one_to_one({vpiCondition},
 					 obj_h, {&parent, current_node},
 					 [&](AST::AstNode* node) {
 						 current_node->children.push_back(node);
+						 node->visitEachDescendant([](AST::AstNode* node) {
+							 if (node->type == AST::AST_CONSTANT) {
+								 node->is_signed = true;
+							 }
+						 });
 					 });
 	visit_one_to_many({vpiForIncStmt},
 					  obj_h, {&parent, current_node},
@@ -1277,6 +1283,13 @@ AST::AstNode* UhdmAst::handle_for(vpiHandle obj_h, AstNodeList& parent) {
 						 statements->children.push_back(node);
 						 current_node->children.push_back(statements);
 					 });
+	auto local_counter_name = counter->str;
+	counter->str = "\\loop" + std::to_string(loop_id) + "::" + counter->str.substr(1);
+	current_node->visitEachDescendant([&](AST::AstNode* node) {
+		if (node->str == local_counter_name) {
+			node->str = counter->str;
+		}
+	});
 	return current_node;
 }
 
