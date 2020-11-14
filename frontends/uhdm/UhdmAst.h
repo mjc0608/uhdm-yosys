@@ -56,6 +56,7 @@ class UhdmAst {
 		AST::AstNode* handle_port(vpiHandle obj_h, AstNodeList& parent);
 		AST::AstNode* handle_module(vpiHandle obj_h, AstNodeList& parent);
 		AST::AstNode* handle_struct_typespec(vpiHandle obj_h, AstNodeList& parent);
+		AST::AstNode* handle_logic_typespec(vpiHandle obj_h, AstNodeList& parent);
 		AST::AstNode* handle_typespec_member(vpiHandle obj_h, AstNodeList& parent);
 		AST::AstNode* handle_enum_typespec(vpiHandle obj_h, AstNodeList& parent);
 		AST::AstNode* handle_enum_const(vpiHandle obj_h);

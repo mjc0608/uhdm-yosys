@@ -213,6 +213,10 @@ void UhdmAst::add_typedef(AST::AstNode* current_node, AST::AstNode* type_node) {
 		typedef_node->children.push_back(wire_node);
 		current_node->children.push_back(type_node);
 		current_node->children.push_back(typedef_node);
+	} else if (type_node->type == AST::AST_WIRE) {
+		type_node->str.clear();
+		typedef_node->children.push_back(type_node);
+		current_node->children.push_back(typedef_node);
 	}
 }
 
@@ -487,6 +491,18 @@ AST::AstNode* UhdmAst::handle_struct_typespec(vpiHandle obj_h, AstNodeList& pare
 					  [&](AST::AstNode* node) {
 						  current_node->children.push_back(node);
 					  });
+	return current_node;
+}
+
+AST::AstNode* UhdmAst::handle_logic_typespec(vpiHandle obj_h, AstNodeList& parent) {
+	auto current_node = make_ast_node(AST::AST_WIRE, obj_h);
+
+	current_node->is_logic = true;
+	visit_range(obj_h, parent,
+			    [&](AST::AstNode* node) {
+			    current_node->children.push_back(node);
+			    });
+
 	return current_node;
 }
 
@@ -1525,6 +1541,7 @@ AST::AstNode* UhdmAst::handle_object(vpiHandle obj_h, AstNodeList parent) {
 		case vpiPort: node = handle_port(obj_h, parent); break;
 		case vpiModule: node = handle_module(obj_h, parent); break;
 		case vpiStructTypespec: node = handle_struct_typespec(obj_h, parent); break;
+		case vpiLogicTypespec: node = handle_logic_typespec(obj_h, parent); break;
 		case vpiTypespecMember: node = handle_typespec_member(obj_h, parent); break;
 		case vpiEnumTypespec: node = handle_enum_typespec(obj_h, parent); break;
 		case vpiEnumConst: node = handle_enum_const(obj_h); break;
